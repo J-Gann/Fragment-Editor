@@ -1,0 +1,8 @@
+testFragment
+
+for(int cnt = <start>; cnt <= <end>; cnt++)
+{
+	
+}
+
+["loop", "for", "cnt", "schleife", "regular", "often used"]
