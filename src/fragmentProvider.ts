@@ -32,7 +32,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
 
     constructor()
     {
-        this.fragments = [];
+        this.fragments = this.readFragmentFiles();
     }
 
     getTreeItem(element: Fragment): vscode.TreeItem
@@ -42,7 +42,6 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
 
     getChildren(element?: Fragment): Thenable<Fragment[]>
     {
-        //this.readFragmentFiles();
         return Promise.resolve(this.fragments);
     }
 
@@ -59,7 +58,6 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
         {
             vscode.window.showTextDocument(file);
         });
-
     }
 
     addEntry(): void
@@ -133,7 +131,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
         vscode.window.showInformationMessage("Fragment Deleted");
     }
 
-    readFragmentFiles()
+    readFragmentFiles(): Fragment[]
     {
         var fragmentsList: Fragment[];
         fs.readdir("C:/Users/Jonas/Documents/fragment-editor/fragments", (err: Error, files: []) =>
@@ -141,13 +139,27 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
             if(err)
             {
                 vscode.window.showErrorMessage("Unable to scan directory: " + err);
-            } 
-            files.forEach((file) =>
+            }
+            else
             {
-                this.fragments.push(new Fragment(file));
-                //vscode.window.showInformationMessage(file);
-            });
-            this.fragments = fragmentsList;
+                files.forEach((file) =>
+                {
+                    this.fragments.push(new Fragment(String(file).substr(0,String(file).length-4)));
+                });
+                vscode.window.showInformationMessage("Fragments loaded");
+                return fragmentsList;
+            }
+        });
+        return [];
+    }
+
+    sqlRequest()
+    {
+        var input = vscode.window.showInputBox({prompt: "Input a label for the Fragment"});
+
+        input.then((value) =>
+        {
+            vscode.window.showInformationMessage("SQL Request: " + value);
         });
     }
 }

@@ -38,7 +38,6 @@
 					"name": "Fragment Editor"
 				}
 			]
-
 		},
 		"commands":
 		[
@@ -53,6 +52,10 @@
 			{
 				"command": "fragmentEditor.editEntry",
 				"title": "Edit"
+			},
+			{
+				"command": "fragmentEditor.sqlRequest",
+				"title": "SQL"
 			}
 		],
 		"menus":
@@ -61,6 +64,10 @@
 			[
 				{
 					"command": "fragmentEditor.addEntry",
+					"group": "navigation"
+				},
+				{
+					"command": "fragmentEditor.sqlRequest",
 					"group": "navigation"
 				}
 			],
