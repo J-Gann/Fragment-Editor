@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
-let sqlite = require('sqlite');
-let fs = require("fs");
+var sqlite3 = require('sqlite3');
+var fs = require("fs");
+var db = new sqlite3.Database(':memory:');
 
 export class Fragment extends vscode.TreeItem
 {
@@ -27,14 +28,6 @@ export class Fragment extends vscode.TreeItem
 export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
 {
     fragments: Fragment[];
-    db = new sqlite.Database('C:/Users/Jonas/Documents/fragment-editor/fragments/db', (err: Error) =>
-    {
-        if (err)
-        {
-            vscode.window.showInformationMessage(err.message);
-        }
-        vscode.window.showInformationMessage('Connected to the in-memory SQlite database.');
-    });
 
 	private _onDidChangeTreeData: vscode.EventEmitter<Fragment | undefined> = new vscode.EventEmitter<Fragment | undefined>();
 	readonly onDidChangeTreeData: vscode.Event<Fragment | undefined> = this._onDidChangeTreeData.event;

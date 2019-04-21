@@ -3,25 +3,19 @@
 	"displayName": "FragmentEditor",
 	"description": "",
 	"version": "0.0.1",
-	"engines":
-	{
+	"engines": {
 		"vscode": "^1.33.0"
 	},
-	"categories":
-	[
+	"categories": [
 		"Other"
 	],
-	"activationEvents":
-	[
+	"activationEvents": [
 		"onView:fragmentEditor"
 	],
 	"main": "./out/extension.js",
-	"contributes":
-	{
-		"viewsContainers":
-		{
-			"activitybar":
-			[
+	"contributes": {
+		"viewsContainers": {
+			"activitybar": [
 				{
 					"id": "fragment",
 					"title": "Fragment",
@@ -29,22 +23,19 @@
 				}
 			]
 		},
-		"views":
-		{
-			"fragment":
-			[
+		"views": {
+			"fragment": [
 				{
 					"id": "fragmentEditor",
 					"name": "Fragment Editor"
 				}
 			]
 		},
-		"commands":
-		[
+		"commands": [
 			{
 				"command": "fragmentEditor.addEntry",
 				"title": "Add"
-			},		
+			},
 			{
 				"command": "fragmentEditor.deleteEntry",
 				"title": "Delete"
@@ -58,10 +49,8 @@
 				"title": "SQL"
 			}
 		],
-		"menus":
-		{
-			"view/title":
-			[
+		"menus": {
+			"view/title": [
 				{
 					"command": "fragmentEditor.addEntry",
 					"group": "navigation"
@@ -71,8 +60,7 @@
 					"group": "navigation"
 				}
 			],
-			"view/item/context":
-			[
+			"view/item/context": [
 				{
 					"command": "fragmentEditor.deleteEntry",
 					"group": "inline"
@@ -84,24 +72,21 @@
 			]
 		}
 	},
-	"scripts":
-	{
+	"scripts": {
 		"vscode:prepublish": "npm run compile",
 		"compile": "tsc -p ./",
 		"watch": "tsc -watch -p ./",
 		"postinstall": "node ./node_modules/vscode/bin/install",
 		"test": "npm run compile && node ./node_modules/vscode/bin/test"
 	},
-	"devDependencies":
-	{
+	"devDependencies": {
 		"typescript": "^3.3.1",
 		"vscode": "^1.1.28",
 		"tslint": "^5.12.1",
 		"@types/node": "^10.12.21",
 		"@types/mocha": "^2.2.42"
 	},
-	"dependencies": 
-	{
-		"sqllite": "^3.0.3"
+	"dependencies": {
+		"sqlite3": "^4.0.6"
 	}
 }
