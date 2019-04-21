@@ -99,5 +99,9 @@
 		"tslint": "^5.12.1",
 		"@types/node": "^10.12.21",
 		"@types/mocha": "^2.2.42"
+	},
+	"dependencies": 
+	{
+		"sqllite": "^3.0.3"
 	}
 }

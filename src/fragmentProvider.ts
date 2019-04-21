@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { resolve } from 'path';
+let sqlite = require('sqlite');
 let fs = require("fs");
 
 export class Fragment extends vscode.TreeItem
@@ -27,6 +27,15 @@ export class Fragment extends vscode.TreeItem
 export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
 {
     fragments: Fragment[];
+    db = new sqlite.Database('C:/Users/Jonas/Documents/fragment-editor/fragments/db', (err: Error) =>
+    {
+        if (err)
+        {
+            vscode.window.showInformationMessage(err.message);
+        }
+        vscode.window.showInformationMessage('Connected to the in-memory SQlite database.');
+    });
+
 	private _onDidChangeTreeData: vscode.EventEmitter<Fragment | undefined> = new vscode.EventEmitter<Fragment | undefined>();
 	readonly onDidChangeTreeData: vscode.Event<Fragment | undefined> = this._onDidChangeTreeData.event;
 
@@ -155,11 +164,24 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
 
     sqlRequest()
     {
-        var input = vscode.window.showInputBox({prompt: "Input a label for the Fragment"});
+        var input = vscode.window.showInputBox({prompt: "Input a SQL Request"});
 
         input.then((value) =>
         {
-            vscode.window.showInformationMessage("SQL Request: " + value);
+            if(value === undefined)
+            {
+                vscode.window.showErrorMessage("SQL Request Cancelled");
+                return;
+            }
+            else if(value === "")
+            {
+                vscode.window.showErrorMessage("SQL Request Cancelled (no empty request allowed)");
+                return;
+            }
+            else
+            {
+                vscode.window.showInformationMessage("SQL Request: " + value);
+            }
         });
     }
 }
