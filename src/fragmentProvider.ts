@@ -124,7 +124,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
         {
             if(err)
             {
-                vscode.window.showErrorMessage("File not deleted")
+                vscode.window.showErrorMessage("File not deleted");
             }
             else
             {
