@@ -13,7 +13,13 @@ export class Database {
         this.fragmentDir = require('os').homedir() + "/fragments/";
         this.createDatabase();
 
-        this.fragments = [];
+        this.fragments = [
+            new Fragment("a"),
+            new Fragment("as"),
+            new Fragment("asd"),
+            new Fragment("asdf"),
+            new Fragment("asdfg")
+        ];
     }
 
     createDatabase(): void {
