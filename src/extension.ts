@@ -1,7 +1,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import {Fragment} from "./fragment";
+import { Fragment } from "./fragment";
 import { FragmentProvider } from './fragmentProvider';
 
 
