@@ -1,7 +1,12 @@
 import * as vscode from 'vscode';
-var sqlite3 = require('sqlite3');
 var fs = require("fs");
-var db = new sqlite3.Database(':memory:');
+var dblite = require('dblite');
+var fragmentDir = require('os').homedir() + "/fragments/";
+
+if (!fs.existsSync(fragmentDir)) {
+    fs.mkdirSync(fragmentDir);
+}
+
 
 export class Fragment extends vscode.TreeItem
 {
@@ -54,7 +59,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
 
     editEntry(fragment: Fragment): void
     {
-        var fragmentFile = vscode.workspace.openTextDocument("C:/Users/Jonas/Documents/fragment-editor/fragments/"+fragment.label+".txt");
+        var fragmentFile = vscode.workspace.openTextDocument(fragmentDir + fragment.label + ".txt");
 
         fragmentFile.then((file) =>
         {
@@ -90,7 +95,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
             }
             else
             {
-                fs.writeFile("C:/Users/Jonas/Documents/fragment-editor/fragments/"+value+".txt", "", function(err: Error)
+                fs.writeFile(fragmentDir + value + ".txt", "", function(err: Error)
                 {
                     if(err)
                     {
@@ -115,7 +120,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
             return fragment.label !== element.label;
         });
 
-        fs.unlink("C:/Users/Jonas/Documents/fragment-editor/fragments/"+fragment.label+".txt", (err: Error) =>
+        fs.unlink(fragmentDir + fragment.label + ".txt", (err: Error) =>
         {
             if(err)
             {
@@ -136,7 +141,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
     readFragmentFiles(): Fragment[]
     {
         var fragmentsList: Fragment[];
-        fs.readdir("C:/Users/Jonas/Documents/fragment-editor/fragments", (err: Error, files: []) =>
+        fs.readdir(fragmentDir, (err: Error, files: []) =>
         {
             if(err)
             {
