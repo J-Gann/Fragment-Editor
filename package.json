@@ -34,7 +34,8 @@
 		"commands": [
 			{
 				"command": "fragmentEditor.addEntry",
-				"title": "Add"
+				"title": "Add",
+				"icon": "media/add.png"
 			},
 			{
 				"command": "fragmentEditor.deleteEntry",
@@ -46,11 +47,13 @@
 			},
 			{
 				"command": "fragmentEditor.filter",
-				"title": "Filter"
+				"title": "Filter",
+				"icon": "media/filter.png"
 			},
 			{
 				"command": "fragmentEditor.reset",
-				"title": "Reset"
+				"title": "Reset",
+				"icon": "media/reset.png"
 			}
 		],
 		"menus": {
