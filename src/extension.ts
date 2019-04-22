@@ -1,7 +1,8 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { FragmentProvider, Fragment } from './fragmentProvider';
+import {Fragment} from "./fragment";
+import { FragmentProvider } from './fragmentProvider';
 
 
 export function activate(context: vscode.ExtensionContext)
