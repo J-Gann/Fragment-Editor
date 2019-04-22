@@ -46,7 +46,7 @@
 			},
 			{
 				"command": "fragmentEditor.filter",
-				"title": "SQL"
+				"title": "Filter"
 			}
 		],
 		"menus": {

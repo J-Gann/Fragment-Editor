@@ -47,14 +47,13 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
             if(this.database.addFragment(String(value), {}))
             {
                 vscode.window.showInformationMessage("Fragment Added");
-                return;
             }
             else
             {
                 vscode.window.showErrorMessage("Fragment Not Added (label has to be unique)");
-                return;
             }
         });
+        this.refresh();
     }
 
     deleteEntry(fragment: Fragment): void
@@ -62,13 +61,12 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
         if(this.database.deleteFragment(fragment.label))
         {
             vscode.window.showInformationMessage("Fragment Deleted");
-            return;
         }
         else
         {
             vscode.window.showErrorMessage("Fragment Not Deleted");
-            return;
         }
+        this.refresh();
     }
 
     filter()
@@ -80,13 +78,12 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
             if(value === undefined)
             {
                 vscode.window.showErrorMessage("SQL Request Cancelled");
-                return;
             } 
             else
             {
                 this.fragmentListFilter = String(value);
-                return;
             }
         });
+        this.refresh();
     }
 }
