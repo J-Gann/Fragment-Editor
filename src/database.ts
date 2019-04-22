@@ -5,28 +5,30 @@ import fs = require("fs");
 
 export class Database {
     db: any;
-    
     fragmentDir: string;
-    filebuffer : any;
+
+    fragments: Fragment[];
 
     constructor() {
         this.fragmentDir = require('os').homedir() + "/fragments/";
-        this.createFragmentDir();
+        this.createDatabase();
 
-        this.db = new sql.Database(this.filebuffer);
-    }
-
-    createFragmentDir(): void {
-        if (!fs.existsSync(this.fragmentDir)) {
-            fs.mkdirSync(this.fragmentDir);
-        }
-    }
-
-    createFileBuffer(): void {
-
+        this.fragments = [];
     }
 
     createDatabase(): void {
+        if (!fs.existsSync(this.fragmentDir)) {
+            fs.mkdirSync(this.fragmentDir);
+        }
+
+        if (!fs.existsSync(this.fragmentDir + "/fragments.db")) {
+            const db = new sql.Database();
+            const data = this.db.export();
+            const buffer = Buffer.from(data);
+            fs.writeFileSync(this.fragmentDir + '/fragment.db', buffer);
+        }
+        const filebuffer = fs.readFileSync(this.fragmentDir + '/fragment.db');
+        this.db = new sql.Database(filebuffer);
         this.db.run("CREATE TABLE IF NOT EXISTS fragments (a int, b char);");
         this.persist();
     }
@@ -38,11 +40,15 @@ export class Database {
     }
 
     getFragments(): Fragment[] {
-        return null;
+        return this.fragments;
     }
 
     getFilteredFragments(filter: string): Fragment[] {
-        return null;
+        return this.fragments;
+    }
+
+    getFragment(label: String): Fragment {
+        return new Fragment("asd");
     }
 
     /**
