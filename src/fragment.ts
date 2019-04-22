@@ -1,23 +1,23 @@
 import * as vscode from "vscode";
 
-export class Fragment extends vscode.TreeItem
-{
+export class Fragment extends vscode.TreeItem {
+    
     keywords: string[];
     code: string;
-    constructor(public readonly label: string)
-    {
+    language: string;
+
+    constructor(public readonly label: string) {
         super(label);
         this.keywords = [];
         this.code = "";
+        this.language = "";
     }
 
-    get description(): string
-    {
+    get description(): string {
         return "";
     }
 
-    get tooltip(): string
-    {
+    get tooltip(): string {
         return this.label + "\n\n" + this.code + "\n\n" + this.keywords;
     }
 }

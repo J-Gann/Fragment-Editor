@@ -11,15 +11,11 @@ if (!fs.existsSync(fragmentDir)) {
 var filebuffer = fs.readFileSync(fragmentDir + 'test.db');
 var db = null;
 
-
-
 export class Database {
     
     db: any;
 
     constructor() {
-        
-
         db = new sql.Database(filebuffer);
 
         var sqlstr = "CREATE TABLE IF NOT EXISTS fragments (a int, b char);";
@@ -38,11 +34,24 @@ export class Database {
         fs.writeFileSync(fragmentDir + '/db/test.db', buffer);
     }
 
-    getFragments(): fragments : Fragment[] {
-
+    getFragments(): Fragment[] {
+        return null;
     }
 
     getFilteredFragments(filter: string): void {
 
+    }
+
+    /**
+     * return true if fragment was created
+     * return false if fragment already exists
+     */
+
+    addFragment(label: String, {}): boolean {
+        return false;
+    }
+
+    deleteFragment(label: String) : boolean {
+        return false;
     }
 }
