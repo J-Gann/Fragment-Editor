@@ -45,7 +45,7 @@
 				"title": "Edit"
 			},
 			{
-				"command": "fragmentEditor.sqlRequest",
+				"command": "fragmentEditor.filter",
 				"title": "SQL"
 			}
 		],
@@ -56,7 +56,7 @@
 					"group": "navigation"
 				},
 				{
-					"command": "fragmentEditor.sqlRequest",
+					"command": "fragmentEditor.filter",
 					"group": "navigation"
 				}
 			],

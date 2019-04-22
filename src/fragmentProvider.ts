@@ -4,17 +4,19 @@ import { Database } from './database';
 
 export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
 {
-    fragments: Fragment[];
     database: Database;
+    fragmentList: Fragment[];
+    fragmentDir: any;
+
 
 	private _onDidChangeTreeData: vscode.EventEmitter<Fragment | undefined> = new vscode.EventEmitter<Fragment | undefined>();
 	readonly onDidChangeTreeData: vscode.Event<Fragment | undefined> = this._onDidChangeTreeData.event;
 
     constructor()
     {
-        this.fragments = this.readFragmentFiles();
-
         this.database = new Database();
+        this.fragmentList = this.database.getFragments();
+        this.fragmentDir = require('os').homedir() + "/fragments/";
     }
 
     getTreeItem(element: Fragment): vscode.TreeItem
@@ -24,7 +26,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
 
     getChildren(element?: Fragment): Thenable<Fragment[]>
     {
-        return Promise.resolve(this.fragments);
+        return Promise.resolve(this.database.getFragments());
     }
 
     refresh(): void
@@ -34,12 +36,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
 
     editEntry(fragment: Fragment): void
     {
-        var fragmentFile = vscode.workspace.openTextDocument(fragmentDir + fragment.label + ".txt");
 
-        fragmentFile.then((file) =>
-        {
-            vscode.window.showTextDocument(file);
-        });
     }
 
     addEntry(): void
@@ -48,115 +45,53 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
 
         input.then((value) =>
         {
-            for(var cnt = 0; cnt < this.fragments.length; cnt++)
+            if(this.database.addFragment(String(value), {}))
             {
-                if(this.fragments[cnt].label === value)
-                {
-                    vscode.window.showErrorMessage("Creation of Fragment Cancelled (Label must be unique)");
-                    return;
-                }
-            }
-            if(value === undefined)
-            {
-                this.refresh();
-                vscode.window.showErrorMessage("Creation of Fragment Cancelled");
-                return;
-            }
-            else if(value === '')
-            {
-                this.refresh();
-                vscode.window.showErrorMessage("Creation of Fragment Cancelled (no empty label allowed)");
+                vscode.window.showInformationMessage("Fragment Added");
                 return;
             }
             else
             {
-                fs.writeFile(fragmentDir + value + ".txt", "", function(err: Error)
-                {
-                    if(err)
-                    {
-                        vscode.window.showErrorMessage("File not created");
-                    }
-                    else
-                    {
-                        vscode.window.showInformationMessage("File created");
-                    }
-                });
-                this.fragments.push(new Fragment(String(value)));
-                this.refresh();
-                vscode.window.showInformationMessage("New Fragment Added");
+                vscode.window.showErrorMessage("Fragment Not Added (label has to be unique)");
+                return;
             }
         });
     }
 
-    deleteEntry(fragment: Fragment)
+    deleteEntry(fragment: Fragment): void
     {
-        this.fragments = this.fragments.filter(function(element, index, arr)
+        if(this.database.deleteFragment(fragment.label))
         {
-            return fragment.label !== element.label;
-        });
-
-        fs.unlink(fragmentDir + fragment.label + ".txt", (err: Error) =>
+            vscode.window.showInformationMessage("Fragment Deleted");
+            return;
+        }
+        else
         {
-            if(err)
-            {
-                vscode.window.showErrorMessage("File not deleted");
-            }
-            else
-            {
-                vscode.window.showInformationMessage("File deleted");
-            }
-            this.refresh();
-        });
-
-        this.refresh();
-
-        vscode.window.showInformationMessage("Fragment Deleted");
+            vscode.window.showErrorMessage("Fragment Not Deleted");
+            return;
+        }
     }
 
-    readFragmentFiles(): Fragment[]
+    filter()
     {
-        var fragmentsList: Fragment[];
-        fs.readdir(fragmentDir, (err: Error, files: []) =>
+        var input = vscode.window.showInputBox({prompt: "Input a string which will be searched for"});
+
+        input.then((value) =>
         {
-            if(err)
+            if (value === undefined)
             {
-                vscode.window.showErrorMessage("Unable to scan directory: " + err);
-            }
-            else
-            {
-                files.forEach((file) =>
-                {
-                    if (file.isDir()) {
-                        this.fragments.push(new Fragment(String(file).substr(0,String(file).length-4)));
-                    }
-                });
-                vscode.window.showInformationMessage("Fragments loaded");
-                return fragmentsList;
-            }
-        });
-        return [];
-    }
-
-    sqlRequest()
-    {
-        var input = vscode.window.showInputBox({prompt: "Input a SQL Request"});
-
-        input.then((value) => {
-            if (value === undefined) {
                 vscode.window.showErrorMessage("SQL Request Cancelled");
                 return;
-            } else if(value === "") {
-                vscode.window.showErrorMessage("SQL Request Cancelled (no empty request allowed)");
+            } 
+            else if(value === "")
+            {
+                this.fragmentList = this.database.getFragments();
                 return;
-            } else if (value === "list") {
-                var res = db.exec("SELECT * FROM fragments");
-                console.log(res[0]);
-            } else if (value.startsWith("add ")) {
-                db.run("INSERT INTO fragments VALUES (0, '" + value.split(" ")[1] + "')");
-                saveDb();
-            } else {
-                vscode.window.showInformationMessage("SQL Request: " + value);
-                //console.log(db.exec(value));
+            } 
+            else
+            {
+                this.fragmentList = this.database.getFilteredFragments(String(value));
+                return;
             }
         });
     }
