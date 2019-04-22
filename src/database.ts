@@ -7,19 +7,15 @@ export class Database {
     db: any;
     fragmentDir: string;
 
-    fragments: Fragment[];
+    fragments: Map<string, Fragment>;
 
     constructor() {
         this.fragmentDir = require('os').homedir() + "/fragments/";
         this.createDatabase();
 
-        this.fragments = [
-            new Fragment("a"),
-            new Fragment("as"),
-            new Fragment("asd"),
-            new Fragment("asdf"),
-            new Fragment("asdfg")
-        ];
+        this.fragments = new Map();
+
+        this.fragments.set("asd", new Fragment("asd"));
     }
 
     createDatabase(): void {
@@ -39,6 +35,10 @@ export class Database {
         this.persist();
     }
 
+    loadFragments(): void {
+        
+    }
+
     persist(): void {
         const data = this.db.export();
         const buffer = Buffer.from(data);
@@ -46,18 +46,18 @@ export class Database {
     }
 
     getFragments(): Fragment[] {
-        return this.fragments;
+        return Array.from(this.fragments.values());
     }
 
     getFilteredFragments(filter: string): Fragment[] {
         if (filter === "") {
-            return this.fragments;
+            return Array.from(this.fragments.values());
         }
-        return this.fragments.filter(fragment => fragment.getLabel().toLowerCase().includes(filter));
+        return Array.from(this.fragments.values()).filter(fragment => fragment.getLabel().toLowerCase().includes(filter));
     }
 
-    getFragment(label: String): Fragment {
-        return new Fragment("asd");
+    getFragment(label: string): any {
+        return this.fragments.get(label);
     }
 
     /**
@@ -65,11 +65,19 @@ export class Database {
      * return false if fragment already exists
      */
 
-    addFragment(label: String, {}): boolean {
-        return false;
+    addFragment(label: string, {}): boolean {
+        if (this.fragments.has(label)) {
+            return false;
+        }
+        this.fragments.set(label, new Fragment(label));
+        return true;
     }
 
-    deleteFragment(label: String) : boolean {
+    deleteFragment(label: string) : boolean {
+        if (this.fragments.has(label)) {
+            this.fragments.delete(label);
+            return true;
+        }
         return false;
     }
 }
