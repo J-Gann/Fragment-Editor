@@ -1,52 +1,11 @@
 import * as vscode from 'vscode';
-
-var fs = require("fs");
-var fragmentDir = require('os').homedir() + "/fragments/";
-
-if (!fs.existsSync(fragmentDir)) {
-    fs.mkdirSync(fragmentDir);
-}
-
-var sql = require('sql.js');
-var filebuffer = fs.readFileSync(fragmentDir + '/db/test.db');
-var db = new sql.Database(filebuffer);
-
-var sqlstr = "CREATE TABLE IF NOT EXISTS fragments (a int, b char);";
-saveDb();
-db.run(sqlstr);
-
-function saveDb(): void {
-    var data = db.export();
-    var buffer = Buffer.from(data);
-    fs.writeFileSync(fragmentDir + '/db/test.db', buffer);
-}
-
-
-export class Fragment extends vscode.TreeItem
-{
-    keywords: string[];
-    code: string;
-    constructor(public readonly label: string)
-    {
-        super(label);
-        this.keywords = [];
-        this.code = "";
-    }
-
-    get description(): string
-    {
-        return "";
-    }
-
-    get tooltip(): string
-    {
-        return this.label + "\n\n" + this.code + "\n\n" + this.keywords;
-    }
-}
+import { Fragment } from "./fragment";
+import { Database } from './database';
 
 export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
 {
     fragments: Fragment[];
+    database: Database;
 
 	private _onDidChangeTreeData: vscode.EventEmitter<Fragment | undefined> = new vscode.EventEmitter<Fragment | undefined>();
 	readonly onDidChangeTreeData: vscode.Event<Fragment | undefined> = this._onDidChangeTreeData.event;
@@ -54,6 +13,8 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
     constructor()
     {
         this.fragments = this.readFragmentFiles();
+
+        this.database = new Database();
     }
 
     getTreeItem(element: Fragment): vscode.TreeItem
@@ -165,7 +126,9 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
             {
                 files.forEach((file) =>
                 {
-                    this.fragments.push(new Fragment(String(file).substr(0,String(file).length-4)));
+                    if (file.isDir()) {
+                        this.fragments.push(new Fragment(String(file).substr(0,String(file).length-4)));
+                    }
                 });
                 vscode.window.showInformationMessage("Fragments loaded");
                 return fragmentsList;
@@ -178,8 +141,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
     {
         var input = vscode.window.showInputBox({prompt: "Input a SQL Request"});
 
-        input.then((value) =>
-        {
+        input.then((value) => {
             if (value === undefined) {
                 vscode.window.showErrorMessage("SQL Request Cancelled");
                 return;
