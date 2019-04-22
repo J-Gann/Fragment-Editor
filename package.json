@@ -39,11 +39,13 @@
 			},
 			{
 				"command": "fragmentEditor.deleteEntry",
-				"title": "Delete"
+				"title": "Delete",
+				"icon": "media/delete.png"
 			},
 			{
 				"command": "fragmentEditor.editEntry",
-				"title": "Edit"
+				"title": "Edit",
+				"icon": "media/edit.png"
 			},
 			{
 				"command": "fragmentEditor.filter",
