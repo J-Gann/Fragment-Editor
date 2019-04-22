@@ -52,8 +52,8 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
             {
                 vscode.window.showErrorMessage("Fragment Not Added (label has to be unique)");
             }
+            this.refresh();
         });
-        this.refresh();
     }
 
     deleteEntry(fragment: Fragment): void
@@ -77,13 +77,13 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
         {
             if(value === undefined)
             {
-                vscode.window.showErrorMessage("SQL Request Cancelled");
+                vscode.window.showErrorMessage("Filtering Cancelled");
             } 
             else
             {
                 this.fragmentListFilter = String(value);
             }
+            this.refresh();
         });
-        this.refresh();
     }
 }
