@@ -5,9 +5,8 @@ import { Database } from './database';
 export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
 {
     database: Database;
-    fragmentList: Fragment[];
+    fragmentListFilter: string;
     fragmentDir: any;
-
 
 	private _onDidChangeTreeData: vscode.EventEmitter<Fragment | undefined> = new vscode.EventEmitter<Fragment | undefined>();
 	readonly onDidChangeTreeData: vscode.Event<Fragment | undefined> = this._onDidChangeTreeData.event;
@@ -15,7 +14,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
     constructor()
     {
         this.database = new Database();
-        this.fragmentList = this.database.getFragments();
+        this.fragmentListFilter = "";
         this.fragmentDir = require('os').homedir() + "/fragments/";
     }
 
@@ -26,7 +25,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
 
     getChildren(element?: Fragment): Thenable<Fragment[]>
     {
-        return Promise.resolve(this.database.getFragments());
+        return Promise.resolve(this.database.getFilteredFragments(this.fragmentListFilter));
     }
 
     refresh(): void
@@ -78,19 +77,14 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
 
         input.then((value) =>
         {
-            if (value === undefined)
+            if(value === undefined)
             {
                 vscode.window.showErrorMessage("SQL Request Cancelled");
                 return;
             } 
-            else if(value === "")
-            {
-                this.fragmentList = this.database.getFragments();
-                return;
-            } 
             else
             {
-                this.fragmentList = this.database.getFilteredFragments(String(value));
+                this.fragmentListFilter = String(value);
                 return;
             }
         });
