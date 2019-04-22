@@ -1,45 +1,48 @@
 import { Fragment } from "./fragment";
 
-var sql = require('sql.js');
-const fs = require("fs");
-var fragmentDir = require('os').homedir() + "/fragments/";
-
-if (!fs.existsSync(fragmentDir)) {
-    fs.mkdirSync(fragmentDir);
-}
-
-var filebuffer = fs.readFileSync(fragmentDir + 'test.db');
-var db = null;
+import sql = require('sql.js');
+import fs = require("fs");
 
 export class Database {
-    
     db: any;
+    
+    fragmentDir: string;
+    filebuffer : any;
 
     constructor() {
-        db = new sql.Database(filebuffer);
+        this.fragmentDir = require('os').homedir() + "/fragments/";
+        this.createFragmentDir();
 
-        var sqlstr = "CREATE TABLE IF NOT EXISTS fragments (a int, b char);";
-        db.run(sqlstr);
-        
-        this.persist();
+        this.db = new sql.Database(this.filebuffer);
     }
 
-    createDir(): void {
+    createFragmentDir(): void {
+        if (!fs.existsSync(this.fragmentDir)) {
+            fs.mkdirSync(this.fragmentDir);
+        }
+    }
 
+    createFileBuffer(): void {
+
+    }
+
+    createDatabase(): void {
+        this.db.run("CREATE TABLE IF NOT EXISTS fragments (a int, b char);");
+        this.persist();
     }
 
     persist(): void {
         const data = this.db.export();
         const buffer = Buffer.from(data);
-        fs.writeFileSync(fragmentDir + '/db/test.db', buffer);
+        fs.writeFileSync(this.fragmentDir + '/fragment.db', buffer);
     }
 
     getFragments(): Fragment[] {
         return null;
     }
 
-    getFilteredFragments(filter: string): void {
-
+    getFilteredFragments(filter: string): Fragment[] {
+        return null;
     }
 
     /**
