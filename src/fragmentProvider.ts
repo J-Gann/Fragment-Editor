@@ -71,7 +71,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
 
     filter()
     {
-        var input = vscode.window.showInputBox({prompt: "Input a string which will be searched for"});
+        var input = vscode.window.showInputBox({prompt: "Input a string which will be searched for", value: this.fragmentListFilter});
 
         input.then((value) =>
         {
@@ -85,5 +85,11 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
             }
             this.refresh();
         });
+    }
+
+    reset()
+    {
+        this.fragmentListFilter = "";
+        this.refresh();
     }
 }
