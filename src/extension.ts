@@ -11,7 +11,7 @@ export function activate(context: vscode.ExtensionContext) {
 	vscode.commands.registerCommand('fragmentEditor.addEntry', () => fragmentProvider.addEntry());
 	vscode.commands.registerCommand('fragmentEditor.editEntry', (fragment: Fragment) => fragmentProvider.editEntry(fragment));
 	vscode.commands.registerCommand('fragmentEditor.deleteEntry', (fragment: Fragment) => fragmentProvider.deleteEntry(fragment));
-	vscode.commands.registerCommand('fragmentEditor.sqlRequest', () => fragmentProvider.sqlRequest());
+	vscode.commands.registerCommand('fragmentEditor.filter', () => fragmentProvider.filter());
 }
 
 export function deactivate() {}
