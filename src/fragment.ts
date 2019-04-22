@@ -13,6 +13,10 @@ export class Fragment extends vscode.TreeItem {
         this.language = "";
     }
 
+    getLabel(): string {
+        return this.label;
+    }
+
     get description(): string {
         return "";
     }

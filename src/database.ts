@@ -28,8 +28,8 @@ export class Database {
         }
 
         if (!fs.existsSync(this.fragmentDir + "/fragments.db")) {
-            const db = new sql.Database();
-            const data = this.db.export();
+            const bufferdatabase = new sql.Database();
+            const data = bufferdatabase.export();
             const buffer = Buffer.from(data);
             fs.writeFileSync(this.fragmentDir + '/fragment.db', buffer);
         }
@@ -50,7 +50,10 @@ export class Database {
     }
 
     getFilteredFragments(filter: string): Fragment[] {
-        return this.fragments;
+        if (filter === "") {
+            return this.fragments;
+        }
+        return this.fragments.filter(fragment => fragment.getLabel().toLowerCase().includes(filter));
     }
 
     getFragment(label: String): Fragment {
