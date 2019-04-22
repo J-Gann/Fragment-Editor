@@ -1,10 +1,24 @@
 import * as vscode from 'vscode';
+
 var fs = require("fs");
-var dblite = require('dblite');
 var fragmentDir = require('os').homedir() + "/fragments/";
 
 if (!fs.existsSync(fragmentDir)) {
     fs.mkdirSync(fragmentDir);
+}
+
+var sql = require('sql.js');
+var filebuffer = fs.readFileSync(fragmentDir + '/db/test.db');
+var db = new sql.Database(filebuffer);
+
+var sqlstr = "CREATE TABLE IF NOT EXISTS fragments (a int, b char);";
+saveDb();
+db.run(sqlstr);
+
+function saveDb(): void {
+    var data = db.export();
+    var buffer = Buffer.from(data);
+    fs.writeFileSync(fragmentDir + '/db/test.db', buffer);
 }
 
 
@@ -166,19 +180,21 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
 
         input.then((value) =>
         {
-            if(value === undefined)
-            {
+            if (value === undefined) {
                 vscode.window.showErrorMessage("SQL Request Cancelled");
                 return;
-            }
-            else if(value === "")
-            {
+            } else if(value === "") {
                 vscode.window.showErrorMessage("SQL Request Cancelled (no empty request allowed)");
                 return;
-            }
-            else
-            {
+            } else if (value === "list") {
+                var res = db.exec("SELECT * FROM fragments");
+                console.log(res[0]);
+            } else if (value.startsWith("add ")) {
+                db.run("INSERT INTO fragments VALUES (0, '" + value.split(" ")[1] + "')");
+                saveDb();
+            } else {
                 vscode.window.showInformationMessage("SQL Request: " + value);
+                //console.log(db.exec(value));
             }
         });
     }
