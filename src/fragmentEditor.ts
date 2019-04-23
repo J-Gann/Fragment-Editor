@@ -27,16 +27,16 @@ export class FragmentEditor {
 
         this.panel.webview.onDidReceiveMessage(
             (message: any) => {
-                console.log(message);
                 switch (message.command) {
                     case 'cancel':
-                        this.panel.dispose();
-                        this.panel.onDidDispose();
+                     //  this.panel.dispose();
+                     //   this.panel.onDidDispose();
+                        vscode.window.showInformationMessage("cancel");
                         return;
                     case 'submit':
-                        this.panel.dispose();
-                        this.panel.onDidDispose();
-                        console.log(message.text);
+                       // this.panel.dispose();
+                     //   this.panel.onDidDispose();
+                        vscode.window.showInformationMessage("submit");
                         return;
               }
             },
@@ -95,25 +95,14 @@ function getWebviewContent(fragment: Fragment) {
         <button onclick="cancelFunction()" class="btn waves-effect waves-light" type="submit" name="action">Cancel</button>
 
         <script>
-            function submitFunction() {
-                const vscode = acquireVsCodeApi();
-
-                vscode.postMessage({
-                        command: 'submit',
-                        text: '🐛  on line '
-                    })
-                }
-                }, 100);
+            const vscode = acquireVsCodeApi();
+            function submitFunction()
+            {
+                vscode.postMessage({command: 'submit', text: 'submit'});
             }
-            function cancelFunction() {
-                const vscode = acquireVsCodeApi();
-
-                vscode.postMessage({
-                        command: 'cancel',
-                        text: ''
-                    })
-                }
-                }, 100);
+            function cancelFunction()
+            {
+                vscode.postMessage({command: 'cancel', text: 'cancel'});
             }
         </script>
     </body>
