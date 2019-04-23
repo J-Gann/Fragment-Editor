@@ -48,7 +48,7 @@ export class FragmentEditor {
                             domain: message.text.domain,
                             placeHolders: message.text.placeHolders
                         });
-                        console.log("entry edited " + updated);
+                        vscode.window.showInformationMessage(updated ? "Fragment edited.": "Fragment not edited.");
                         this.fragmentProvider.refresh();
                         this.panel.dispose();
                         this.panel.onDidDispose();
@@ -90,10 +90,9 @@ function getWebviewContent(fragment: Fragment) {
         <title>${fragment.label}</title>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
         <style>
-        body { font-size: 15px; }
-        input { width:100%; color:lightgrey; font-size: 15px; }
-        input:disabled { color:white; font-size: 15px; }
-        textarea { width:100%; color:lightgrey; font-size: 15px; }
+            input { width:100%; color:white; font-size: 15px; }
+            textarea { width:100%; color:white; font-size: 15px; height: auto; }
+            .white { color:white}
         </style>
     </head>
     <body>
@@ -101,7 +100,7 @@ function getWebviewContent(fragment: Fragment) {
         Information: <input id="information" type="text" value="${fragment.information}">
         Keywords: <input id="keywords" type="text" value="${fragment.keywords}">
         Code: <textarea id="code" rows="16">${fragment.code}</textarea>
-        Codelength:<input id="codelength" type="text" value="${fragment.length}" disabled>
+        Codelength:<input class="white" id="codelength" type="text" value="${fragment.length}" disabled>
         Language: <input id="language" type="text" value="${fragment.language}">
         Domain: <input id="domain" type="text" value="${fragment.domain}">
         Placeholders: <input id="placeholders" type="text" value="${fragment.placeHolders}">
@@ -116,7 +115,7 @@ function getWebviewContent(fragment: Fragment) {
                     "label":  document.getElementById("label").innerHTML ,
                     "information": document.getElementById("information").value, 
                     "keywords": document.getElementById("keywords").value, 
-                    "code": document.getElementById("code").innerHTML,
+                    "code": document.getElementById("code").value,
                     "language": document.getElementById("language").value,
                     "domain": document.getElementById("domain").value,
                     "placeHolders": document.getElementById("placeholders").value

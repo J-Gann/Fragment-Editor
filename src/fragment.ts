@@ -20,7 +20,7 @@ export class Fragment extends vscode.TreeItem {
         this.language = language;
         this.domain = domain;
         this.length = this.code.length;
-        this.placeHolderCount = placeHolders.split(",").length;
+        this.placeHolderCount = placeHolders === "" ? 0 : placeHolders.split(",").length;
         this.placeHolders = placeHolders;
     }
 
