@@ -53,13 +53,7 @@
 			},
 			{
 				"command": "fragmentEditor.deleteEntry",
-				"title": "Delete",
-				"icon": "media/delete.png"
-			},
-			{
-				"command": "fragmentEditor.editEntry",
-				"title": "Edit",
-				"icon": "media/edit.png"
+				"title": "Delete"
 			},
 			{
 				"command": "fragmentEditor.filter",
@@ -90,10 +84,6 @@
 			"view/item/context": [
 				{
 					"command": "fragmentEditor.deleteEntry",
-					"group": "inline"
-				},
-				{
-					"command": "fragmentEditor.editEntry",
 					"group": "inline"
 				}
 			]

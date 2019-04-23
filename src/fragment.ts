@@ -22,6 +22,7 @@ export class Fragment extends vscode.TreeItem {
         this.length = this.code.length;
         this.placeHolderCount = placeHolders === "" ? 0 : placeHolders.split(",").length;
         this.placeHolders = placeHolders;
+        this.command = {command: "fragmentEditor.editEntry", title: "Edit Node", arguments: [this]};
     }
 
     get description(): string {
@@ -41,7 +42,7 @@ export class Fragment extends vscode.TreeItem {
         }
         else
         {
-            tip += this.information;
+            tip += "\n" + this.information;
         }
         tip += "\n\n" + this.keywords;
         return tip;
