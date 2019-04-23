@@ -29,6 +29,21 @@ export class Fragment extends vscode.TreeItem {
     }
 
     get tooltip(): string {
-        return this.information;
+        let tip = "";
+        tip = this.label + "\n";
+        for(var cnt = 0; cnt < this.label.length; cnt++)
+        {
+            tip += "-";
+        }
+        if(this.code.split("\n\n").length < 5)
+        {
+            tip += "\n" + this.code;
+        }
+        else
+        {
+            tip += this.information;
+        }
+        tip += "\n\n" + this.keywords;
+        return tip;
     }
 }
