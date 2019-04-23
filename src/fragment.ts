@@ -24,10 +24,6 @@ export class Fragment extends vscode.TreeItem {
         this.placeHolders = placeHolders;
     }
 
-    getLabel(): string {
-        return this.label;
-    }
-
     get description(): string {
         return "";
     }

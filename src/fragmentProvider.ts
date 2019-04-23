@@ -1,12 +1,14 @@
 import * as vscode from 'vscode';
 import { Fragment } from "./fragment";
 import { Database } from './database';
+import { FragmentEditor } from './fragmentEditor';
 
 export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
 {
     database: Database;
     fragmentListFilter: string;
     fragmentDir: any;
+    fragmentEditor: FragmentEditor;
 
 	private _onDidChangeTreeData: vscode.EventEmitter<Fragment | undefined> = new vscode.EventEmitter<Fragment | undefined>();
 	readonly onDidChangeTreeData: vscode.Event<Fragment | undefined> = this._onDidChangeTreeData.event;
@@ -16,6 +18,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
         this.database = new Database();
         this.fragmentListFilter = "";
         this.fragmentDir = require('os').homedir() + "/fragments/";
+        this.fragmentEditor = new FragmentEditor();
     }
 
     getTreeItem(element: Fragment): vscode.TreeItem
@@ -45,7 +48,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
      */
     editEntry(fragment: Fragment): void
     {
-
+        this.fragmentEditor.showFragment(fragment);
     }
 
     /**
@@ -85,6 +88,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
     {
         if(this.database.deleteFragment(fragment.label))
         {
+            this.fragmentEditor.onDelete(fragment);
             vscode.window.showInformationMessage("Fragment Deleted");
         }
         else

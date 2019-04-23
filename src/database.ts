@@ -16,6 +16,7 @@ export class Database {
 
         this.fragments = new Map();
         this.loadFragments();
+        this.updateFragment("asd", {code:"ichbincode"});
     }
 
     createDatabase(): void {
@@ -69,7 +70,7 @@ export class Database {
         if (filter === "") {
             return Array.from(this.fragments.values());
         }
-        return Array.from(this.fragments.values()).filter(fragment => fragment.getLabel().toLowerCase().includes(filter));
+        return Array.from(this.fragments.values()).filter(fragment => fragment.label.toLowerCase().includes(filter));
     }
 
     getFragment(label: string): any {
@@ -92,7 +93,7 @@ export class Database {
         return true;
     }
 
-    deleteFragment(label: string) : boolean {
+    deleteFragment (label: string) : boolean {
         if (this.fragments.has(label)) {
             this.fragments.delete(label);
             this.db.run("DELETE FROM fragments WHERE label=?", [label]);
@@ -100,5 +101,29 @@ export class Database {
             return true;
         }
         return false;
+    }
+
+    updateFragment (label: string, options: any): boolean {
+        const oldFragment = this.fragments.get(label);
+        if (oldFragment === undefined) {
+            return false;
+        }
+
+        var options = options || {};
+
+        const newFragment = new Fragment(label, {
+            information: options.information || oldFragment.information, 
+            keywords: options.keywords || oldFragment.keywords, 
+            code: options.code || oldFragment.code,
+            language: options.language || oldFragment.language,
+            domain: options.domain || oldFragment.domain,
+            placeHolderCount: options.placeHolderCount || oldFragment.placeHolderCount,                   
+            placeHolders: options.placeHolders || oldFragment.placeHolders
+        });
+
+        this.fragments.set(label, newFragment);
+        this.db.run("UPDATE fragments SET information=? , keywords=?, code=?, language=?, domain=?, placeholdercount=?, placeholders=? WHERE label=?", [newFragment.information, newFragment.keywords, newFragment.code, newFragment.language, newFragment.domain, newFragment.placeHolderCount, newFragment.placeHolders, newFragment.label]);
+        this.persist();
+        return true;
     }
 }
