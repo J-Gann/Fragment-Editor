@@ -1,45 +1,24 @@
 import * as vscode from 'vscode';
-var fs = require("fs");
-var dblite = require('dblite');
-var fragmentDir = require('os').homedir() + "/fragments/";
-
-if (!fs.existsSync(fragmentDir)) {
-    fs.mkdirSync(fragmentDir);
-}
-
-
-export class Fragment extends vscode.TreeItem
-{
-    keywords: string[];
-    code: string;
-    constructor(public readonly label: string)
-    {
-        super(label);
-        this.keywords = [];
-        this.code = "";
-    }
-
-    get description(): string
-    {
-        return "";
-    }
-
-    get tooltip(): string
-    {
-        return this.label + "\n\n" + this.code + "\n\n" + this.keywords;
-    }
-}
+import { Fragment } from "./fragment";
+import { Database } from './database';
+import { FragmentEditor } from './fragmentEditor';
 
 export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
 {
-    fragments: Fragment[];
+    database: Database;
+    fragmentListFilter: string;
+    fragmentDir: any;
+    fragmentEditor: FragmentEditor;
 
 	private _onDidChangeTreeData: vscode.EventEmitter<Fragment | undefined> = new vscode.EventEmitter<Fragment | undefined>();
 	readonly onDidChangeTreeData: vscode.Event<Fragment | undefined> = this._onDidChangeTreeData.event;
 
-    constructor()
+    constructor(context: vscode.ExtensionContext)
     {
-        this.fragments = this.readFragmentFiles();
+        this.database = new Database();
+        this.fragmentListFilter = "";
+        this.fragmentDir = require('os').homedir() + "/fragments/";
+        this.fragmentEditor = new FragmentEditor(context);
     }
 
     getTreeItem(element: Fragment): vscode.TreeItem
@@ -47,139 +26,105 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
         return element;
     }
 
+    /**
+     * Return list of fragments that are displayed in the tree
+     */
     getChildren(element?: Fragment): Thenable<Fragment[]>
     {
-        return Promise.resolve(this.fragments);
+        return Promise.resolve(this.database.getFilteredFragments(this.fragmentListFilter));
     }
 
+    /**
+     * Refresh the displayed list of fragments
+     */
     refresh(): void
     {
 		this._onDidChangeTreeData.fire();
 	}
 
+    /**
+     * Changes the properties of a fragment
+     * @param fragment Fragment that should be edited
+     */
     editEntry(fragment: Fragment): void
     {
-        var fragmentFile = vscode.workspace.openTextDocument(fragmentDir + fragment.label + ".txt");
-
-        fragmentFile.then((file) =>
-        {
-            vscode.window.showTextDocument(file);
-        });
+        this.fragmentEditor.showFragment(fragment);
     }
 
+    /**
+     * Creates a new fragment by opening a input dialog to enter a new label
+     */
     addEntry(): void
     {
         var input = vscode.window.showInputBox({prompt: "Input a label for the Fragment"});
 
         input.then((value) =>
         {
-            for(var cnt = 0; cnt < this.fragments.length; cnt++)
+            if(value === "")
             {
-                if(this.fragments[cnt].label === value)
-                {
-                    vscode.window.showErrorMessage("Creation of Fragment Cancelled (Label must be unique)");
-                    return;
-                }
+                vscode.window.showErrorMessage("Fragment Not Added (no empty label allowed)");
             }
-            if(value === undefined)
+            else if(value === undefined)
             {
-                this.refresh();
-                vscode.window.showErrorMessage("Creation of Fragment Cancelled");
-                return;
+                vscode.window.showErrorMessage("Fragment Not Added");
             }
-            else if(value === '')
+            else if(this.database.addFragment(String(value), {}))
             {
-                this.refresh();
-                vscode.window.showErrorMessage("Creation of Fragment Cancelled (no empty label allowed)");
-                return;
+                vscode.window.showInformationMessage("Fragment Added");
             }
             else
             {
-                fs.writeFile(fragmentDir + value + ".txt", "", function(err: Error)
-                {
-                    if(err)
-                    {
-                        vscode.window.showErrorMessage("File not created");
-                    }
-                    else
-                    {
-                        vscode.window.showInformationMessage("File created");
-                    }
-                });
-                this.fragments.push(new Fragment(String(value)));
-                this.refresh();
-                vscode.window.showInformationMessage("New Fragment Added");
-            }
-        });
-    }
-
-    deleteEntry(fragment: Fragment)
-    {
-        this.fragments = this.fragments.filter(function(element, index, arr)
-        {
-            return fragment.label !== element.label;
-        });
-
-        fs.unlink(fragmentDir + fragment.label + ".txt", (err: Error) =>
-        {
-            if(err)
-            {
-                vscode.window.showErrorMessage("File not deleted");
-            }
-            else
-            {
-                vscode.window.showInformationMessage("File deleted");
+                vscode.window.showErrorMessage("Fragment Not Added (label has to be unique)");
             }
             this.refresh();
         });
-
-        this.refresh();
-
-        vscode.window.showInformationMessage("Fragment Deleted");
     }
 
-    readFragmentFiles(): Fragment[]
+    /**
+     * Deletes a fragment
+     * @param fragment Fragment that should be deleted
+     */
+    deleteEntry(fragment: Fragment): void
     {
-        var fragmentsList: Fragment[];
-        fs.readdir(fragmentDir, (err: Error, files: []) =>
+        if(this.database.deleteFragment(fragment.label))
         {
-            if(err)
-            {
-                vscode.window.showErrorMessage("Unable to scan directory: " + err);
-            }
-            else
-            {
-                files.forEach((file) =>
-                {
-                    this.fragments.push(new Fragment(String(file).substr(0,String(file).length-4)));
-                });
-                vscode.window.showInformationMessage("Fragments loaded");
-                return fragmentsList;
-            }
-        });
-        return [];
+            this.fragmentEditor.onDelete(fragment);
+            vscode.window.showInformationMessage("Fragment Deleted");
+        }
+        else
+        {
+            vscode.window.showErrorMessage("Fragment Not Deleted");
+        }
+        this.refresh();
     }
 
-    sqlRequest()
+    /**
+     * Filters the displayed list of fragments by opening a input dialog and searching for fragments which label contains the input string
+     */
+    filter(): void
     {
-        var input = vscode.window.showInputBox({prompt: "Input a SQL Request"});
+        var input = vscode.window.showInputBox({prompt: "Input a string which will be searched for", value: this.fragmentListFilter});
 
         input.then((value) =>
         {
             if(value === undefined)
             {
-                vscode.window.showErrorMessage("SQL Request Cancelled");
-                return;
-            }
-            else if(value === "")
-            {
-                vscode.window.showErrorMessage("SQL Request Cancelled (no empty request allowed)");
-                return;
-            }
+                vscode.window.showErrorMessage("Filtering Cancelled");
+            } 
             else
             {
-                vscode.window.showInformationMessage("SQL Request: " + value);
+                this.fragmentListFilter = String(value);
             }
+            this.refresh();
         });
+    }
+
+    /**
+     * Resets the displayed list of fragments to not be filtered
+     */
+    reset(): void
+    {
+        this.fragmentListFilter = "";
+        this.refresh();
     }
 }
