@@ -18,7 +18,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
         this.database = new Database();
         this.fragmentListFilter = "";
         this.fragmentDir = require('os').homedir() + "/fragments/";
-        this.fragmentEditor = new FragmentEditor(context);
+        this.fragmentEditor = new FragmentEditor(context, this.database, this);
     }
 
     getTreeItem(element: Fragment): vscode.TreeItem

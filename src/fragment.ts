@@ -11,7 +11,7 @@ export class Fragment extends vscode.TreeItem {
     placeHolders: string;
 
     constructor(public readonly label: string, {information = "", keywords = "", code = "", 
-                                                language = "", domain = "", placeHolderCount = 0,
+                                                language = "", domain = "",
                                                 placeHolders = ""}) {
         super(label);
         this.information = information; //placeholder reihenfolge
@@ -20,7 +20,7 @@ export class Fragment extends vscode.TreeItem {
         this.language = language;
         this.domain = domain;
         this.length = this.code.length;
-        this.placeHolderCount = placeHolderCount;
+        this.placeHolderCount = placeHolders.split(",").length;
         this.placeHolders = placeHolders;
     }
 

@@ -1,13 +1,19 @@
 import { Fragment } from "./fragment";
 
 import * as vscode from 'vscode';
+import { Database } from "./database";
+import { FragmentProvider } from "./fragmentProvider";
 
 export class FragmentEditor {
     panel: any;
     context: vscode.ExtensionContext;
+    dataBase: Database;
+    fragmentProvider: FragmentProvider;
 
-    constructor(context: vscode.ExtensionContext) {
+    constructor(context: vscode.ExtensionContext, dataBase: Database, fragmentProvider: FragmentProvider) {
         this.context = context;
+        this.dataBase = dataBase;
+        this.fragmentProvider = fragmentProvider;
     }
 
     createPanel() {
@@ -29,14 +35,23 @@ export class FragmentEditor {
             (message: any) => {
                 switch (message.command) {
                     case 'cancel':
-                     //  this.panel.dispose();
-                     //   this.panel.onDidDispose();
-                        vscode.window.showInformationMessage("cancel");
+                        this.panel.dispose();
+                        this.panel.onDidDispose();
                         return;
                     case 'submit':
-                       // this.panel.dispose();
-                     //   this.panel.onDidDispose();
-                        vscode.window.showInformationMessage("submit");
+                        console.log(message.text);
+                        const updated: boolean = this.dataBase.updateFragment(message.text.label, {
+                            information: message.text.information, 
+                            keywords: message.text.keywords, 
+                            code: message.text.code,
+                            language: message.text.language,
+                            domain: message.text.domain,
+                            placeHolders: message.text.placeHolders
+                        });
+                        console.log("entry edited " + updated);
+                        this.fragmentProvider.refresh();
+                        this.panel.dispose();
+                        this.panel.onDidDispose();
                         return;
               }
             },
@@ -82,7 +97,7 @@ function getWebviewContent(fragment: Fragment) {
         </style>
     </head>
     <body>
-        <h3>Label: ${fragment.label}</h3>
+        <h3 id="label">${fragment.label}</h3>
         Information: <input id="information" type="text" value="${fragment.information}">
         Keywords: <input id="keywords" type="text" value="${fragment.keywords}">
         Code: <textarea id="code" rows="16">${fragment.code}</textarea>
@@ -96,13 +111,20 @@ function getWebviewContent(fragment: Fragment) {
 
         <script>
             const vscode = acquireVsCodeApi();
-            function submitFunction()
-            {
-                vscode.postMessage({command: 'submit', text: 'submit'});
+            function submitFunction() {
+                vscode.postMessage({command: 'submit', text: {
+                    "label":  document.getElementById("label").innerHTML ,
+                    "information": document.getElementById("information").value, 
+                    "keywords": document.getElementById("keywords").value, 
+                    "code": document.getElementById("code").innerHTML,
+                    "language": document.getElementById("language").value,
+                    "domain": document.getElementById("domain").value,
+                    "placeHolders": document.getElementById("placeholders").value
+                }});
+                
             }
-            function cancelFunction()
-            {
-                vscode.postMessage({command: 'cancel', text: 'cancel'});
+            function cancelFunction() {
+                vscode.postMessage({command: 'cancel', text: ''});
             }
         </script>
     </body>
