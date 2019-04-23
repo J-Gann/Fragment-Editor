@@ -26,7 +26,7 @@ export class FragmentEditor {
         );
 
         this.panel.webview.onDidReceiveMessage(
-            message => {
+            (message: any) => {
               switch (message.command) {
                 case 'cancel':
                   this.panel.dispose();
@@ -34,6 +34,7 @@ export class FragmentEditor {
                   return;
                 case 'submit':
                   console.log(message.text);
+                  vscode.window.showInformationMessage(message.text)
                   return;
               }
             },
@@ -64,31 +65,42 @@ export class FragmentEditor {
 }
 
 function getWebviewContent(fragment: Fragment) {
-  return `<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${fragment.label}</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
-    <style>
-      body { font-size: 15px; }
-      input { width:100%; color:lightgrey; font-size: 15px; }
-      input:disabled { color:white; font-size: 15px; }
-      textarea { width:100%; color:lightgrey; font-size: 15px; }
-    </style>
-</head>
-<body>
-    <h3>Label: ${fragment.label}</h3>
-    Information: <input id="information" type="text" value="${fragment.information}">
-    Keywords: <input id="keywords" type="text" value="${fragment.keywords}">
-    Code: <textarea id="code" rows="16">${fragment.code}</textarea>
-    Codelength:<input id="codelength" type="text" value="${fragment.length}" disabled>
-    Language: <input id="language" type="text" value="${fragment.language}">
-    Domain: <input id="domain" type="text" value="${fragment.domain}">
-    Placeholders: <input id="placeholders" type="text" value="${fragment.placeHolders}">
-    Placeholdercount: <input id="placeholdercount" type="number" value="${fragment.placeHolderCount}" disabled>
-    <button class="btn waves-effect waves-light" type="submit" name="action">Save</button>
-</body>
-</html>`;
+    return `<!DOCTYPE html>
+    <html lang="de">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${fragment.label}</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+        <style>
+        body { font-size: 15px; }
+        input { width:100%; color:lightgrey; font-size: 15px; }
+        input:disabled { color:white; font-size: 15px; }
+        textarea { width:100%; color:lightgrey; font-size: 15px; }
+        </style>
+    </head>
+    <body>
+        <h3>Label: ${fragment.label}</h3>
+        Information: <input id="information" type="text" value="${fragment.information}">
+        Keywords: <input id="keywords" type="text" value="${fragment.keywords}">
+        Code: <textarea id="code" rows="16">${fragment.code}</textarea>
+        Codelength:<input id="codelength" type="text" value="${fragment.length}" disabled>
+        Language: <input id="language" type="text" value="${fragment.language}">
+        Domain: <input id="domain" type="text" value="${fragment.domain}">
+        Placeholders: <input id="placeholders" type="text" value="${fragment.placeHolders}">
+        Placeholdercount: <input id="placeholdercount" type="number" value="${fragment.placeHolderCount}" disabled>
+        <button id="submitButton" onclick="submitFunction()" class="btn waves-effect waves-light" type="submit" name="action">Save</button>
+ 
+        <script>
+            const vscode = acquireVsCodeApi();
+            function submitFunction()
+            {
+                console.log("click");
+                vscode.postMessage({command: 'submit', text: "submit"});
+            }
+        </script>
+ 
+    </body>
+
+    </html>`;
 }
