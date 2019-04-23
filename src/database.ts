@@ -2,6 +2,7 @@ import { Fragment } from "./fragment";
 
 import sql = require('sql.js');
 import fs = require("fs");
+import path = require("path");
 
 export class Database {
     db: any;
@@ -10,12 +11,11 @@ export class Database {
     fragments: Map<string, Fragment>;
 
     constructor() {
-        this.fragmentDir = require('os').homedir() + "/fragments/";
+        this.fragmentDir = require('os').homedir() + "/fragments";
         this.createDatabase();
 
         this.fragments = new Map();
-
-        this.fragments.set("asd", new Fragment("asd"));
+        this.loadFragments();
     }
 
     createDatabase(): void {
@@ -27,22 +27,38 @@ export class Database {
             const bufferdatabase = new sql.Database();
             const data = bufferdatabase.export();
             const buffer = Buffer.from(data);
-            fs.writeFileSync(this.fragmentDir + '/fragment.db', buffer);
+            fs.writeFileSync(this.fragmentDir + '/fragments.db', buffer);
         }
-        const filebuffer = fs.readFileSync(this.fragmentDir + '/fragment.db');
+
+        const filebuffer = fs.readFileSync(this.fragmentDir + '/fragments.db');
         this.db = new sql.Database(filebuffer);
-        this.db.run("CREATE TABLE IF NOT EXISTS fragments (a int, b char);");
+        this.db.run("CREATE TABLE IF NOT EXISTS fragments (label char PRIMARY KEY,information char NOT NULL,keywords char NOT NULL,code char NOT NULL,language char NOT NULL,domain char NOT NULL,placeholdercount int(11) NOT NULL,placeholders char NOT NULL);");
         this.persist();
     }
 
     loadFragments(): void {
-        
+        const res = this.db.exec("SELECT * FROM fragments")[0];
+        if (res === undefined) {
+            return;
+        }
+
+        res.values.forEach((element: any[]) => {
+            this.fragments.set(element[0], new Fragment(element[0], {
+                information: element[1], 
+                keywords: element[2], 
+                code: element[3],
+                language: element[4],
+                domain: element[5],
+                placeHolderCount: element[6],                    
+                placeHolders: element[7]
+            }));
+        });
     }
 
     persist(): void {
         const data = this.db.export();
         const buffer = Buffer.from(data);
-        fs.writeFileSync(this.fragmentDir + '/fragment.db', buffer);
+        fs.writeFileSync(this.fragmentDir + '/fragments.db', buffer);
     }
 
     getFragments(): Fragment[] {
@@ -69,13 +85,18 @@ export class Database {
         if (this.fragments.has(label)) {
             return false;
         }
-        this.fragments.set(label, new Fragment(label));
+        const newFragment = new Fragment(label, {});
+        this.fragments.set(label, newFragment);
+        this.db.run("INSERT INTO fragments VALUES (?,?,?,?,?,?,?,?)", [newFragment.label, newFragment.information, newFragment.keywords, newFragment.code, newFragment.language, newFragment.domain, newFragment.placeHolderCount, newFragment.placeHolders]);
+        this.persist();
         return true;
     }
 
     deleteFragment(label: string) : boolean {
         if (this.fragments.has(label)) {
             this.fragments.delete(label);
+            this.db.run("DELETE FROM fragments WHERE label=?", [label]);
+            this.persist();
             return true;
         }
         return false;
