@@ -49,8 +49,7 @@ export class Database {
                 keywords: element[2], 
                 code: element[3],
                 language: element[4],
-                domain: element[5],
-                placeHolderCount: element[6],                    
+                domain: element[5],                  
                 placeHolders: element[7]
             }));
         });
@@ -116,8 +115,7 @@ export class Database {
             keywords: options.keywords || oldFragment.keywords, 
             code: options.code || oldFragment.code,
             language: options.language || oldFragment.language,
-            domain: options.domain || oldFragment.domain,
-            placeHolderCount: options.placeHolderCount || oldFragment.placeHolderCount,                   
+            domain: options.domain || oldFragment.domain,                  
             placeHolders: options.placeHolders || oldFragment.placeHolders
         });
 
