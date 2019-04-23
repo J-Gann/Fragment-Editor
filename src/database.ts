@@ -16,7 +16,6 @@ export class Database {
 
         this.fragments = new Map();
         this.loadFragments();
-        this.updateFragment("asd", {code:"ichbincode"});
     }
 
     createDatabase(): void {
