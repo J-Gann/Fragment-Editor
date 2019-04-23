@@ -27,14 +27,15 @@ export class FragmentEditor {
 
         this.panel.webview.onDidReceiveMessage(
             message => {
-              switch (message.command) {
-                case 'cancel':
-                  this.panel.dispose();
-                  this.panel.onDidDispose();
-                  return;
-                case 'submit':
-                  console.log(message.text);
-                  return;
+                console.log(message);
+                switch (message.command) {
+                    case 'cancel':
+                        this.panel.dispose();
+                        this.panel.onDidDispose();
+                        return;
+                    case 'submit':
+                        console.log(message.text);
+                        return;
               }
             },
             undefined,
@@ -88,7 +89,38 @@ function getWebviewContent(fragment: Fragment) {
     Domain: <input id="domain" type="text" value="${fragment.domain}">
     Placeholders: <input id="placeholders" type="text" value="${fragment.placeHolders}">
     Placeholdercount: <input id="placeholdercount" type="number" value="${fragment.placeHolderCount}" disabled>
-    <button class="btn waves-effect waves-light" type="submit" name="action">Save</button>
+    <button id="submitButton" class="btn waves-effect waves-light" type="submit" name="action">Save</button>
+    <button id="cancelButton" class="btn waves-effect waves-light" type="submit" name="action">Cancel</button>
+
+    <script>
+        window.addEventListener("load", onWindowLoad);
+
+        function onWindowLoad() {
+            document.getElementById("submitButton").addEventListener("click", submit);
+            document.getElementById("cancelButton").addEventListener("click", cancel);
+        }
+
+        function submit() {
+            const vscode = acquireVsCodeApi();
+
+            vscode.postMessage({
+                    command: 'submit',
+                    text: '🐛  on line '
+                })
+            }
+            }, 100);
+        }
+        function cancel() {
+            const vscode = acquireVsCodeApi();
+
+            vscode.postMessage({
+                    command: 'cancel',
+                    text: ''
+                })
+            }
+            }, 100);
+        }
+    </script>
 </body>
 </html>`;
 }
