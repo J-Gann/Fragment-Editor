@@ -17,15 +17,15 @@
 		"keybindings":[
 			{
 				"command": "fragmentEditor.addEntry",
-				"key": "ctrl+n"
+				"key": "ctrl+shift+n"
 			},
 			{
 				"command": "fragmentEditor.reset",
-				"key": "ctrl+r"
+				"key": "ctrl+shift+r"
 			},
 			{
 				"command": "fragmentEditor.filter",
-				"key": "ctrl+f"
+				"key": "ctrl+shift+f"
 			}
 		],
 		"viewsContainers": {
