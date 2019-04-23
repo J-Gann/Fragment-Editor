@@ -68,7 +68,7 @@ export class Database {
         if (filter === "") {
             return Array.from(this.fragments.values());
         }
-        return Array.from(this.fragments.values()).filter(fragment => fragment.label.toLowerCase().includes(filter));
+        return Array.from(this.fragments.values()).filter(fragment => fragment.label.toLowerCase().includes(filter.toLowerCase()));
     }
 
     getFragment(label: string): any {

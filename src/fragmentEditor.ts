@@ -39,7 +39,6 @@ export class FragmentEditor {
                         this.panel.onDidDispose();
                         return;
                     case 'submit':
-                        console.log(message.text);
                         const updated: boolean = this.dataBase.updateFragment(message.text.label, {
                             information: message.text.information, 
                             keywords: message.text.keywords, 
