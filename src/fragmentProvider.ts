@@ -23,28 +23,49 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
         return element;
     }
 
+    /**
+     * Return list of fragments that are displayed in the tree
+     */
     getChildren(element?: Fragment): Thenable<Fragment[]>
     {
         return Promise.resolve(this.database.getFilteredFragments(this.fragmentListFilter));
     }
 
+    /**
+     * Refresh the displayed list of fragments
+     */
     refresh(): void
     {
 		this._onDidChangeTreeData.fire();
 	}
 
+    /**
+     * Changes the properties of a fragment
+     * @param fragment Fragment that should be edited
+     */
     editEntry(fragment: Fragment): void
     {
 
     }
 
+    /**
+     * Creates a new fragment by opening a input dialog to enter a new label
+     */
     addEntry(): void
     {
         var input = vscode.window.showInputBox({prompt: "Input a label for the Fragment"});
 
         input.then((value) =>
         {
-            if(this.database.addFragment(String(value), {}))
+            if(value === "")
+            {
+                vscode.window.showErrorMessage("Fragment Not Added (no empty label allowed)");
+            }
+            else if(value === undefined)
+            {
+                vscode.window.showErrorMessage("Fragment Not Added");
+            }
+            else if(this.database.addFragment(String(value), {}))
             {
                 vscode.window.showInformationMessage("Fragment Added");
             }
@@ -56,6 +77,10 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
         });
     }
 
+    /**
+     * Deletes a fragment
+     * @param fragment Fragment that should be deleted
+     */
     deleteEntry(fragment: Fragment): void
     {
         if(this.database.deleteFragment(fragment.label))
@@ -69,7 +94,10 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
         this.refresh();
     }
 
-    filter()
+    /**
+     * Filters the displayed list of fragments by opening a input dialog and searching for fragments which label contains the input string
+     */
+    filter(): void
     {
         var input = vscode.window.showInputBox({prompt: "Input a string which will be searched for", value: this.fragmentListFilter});
 
@@ -87,7 +115,10 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
         });
     }
 
-    reset()
+    /**
+     * Resets the displayed list of fragments to not be filtered
+     */
+    reset(): void
     {
         this.fragmentListFilter = "";
         this.refresh();
