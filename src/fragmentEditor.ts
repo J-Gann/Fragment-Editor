@@ -4,9 +4,10 @@ import * as vscode from 'vscode';
 
 export class FragmentEditor {
     panel: any;
+    context: vscode.ExtensionContext;
 
-    constructor() {
-        
+    constructor(context: vscode.ExtensionContext) {
+        this.context = context;
     }
 
     createPanel() {
@@ -14,13 +15,31 @@ export class FragmentEditor {
             "",
             "",
             vscode.ViewColumn.One,
-            {}
+            {
+                enableScripts: true
+            }
         );
 
         this.panel.onDidDispose(() => {
             this.panel = undefined;
           }
         );
+
+        this.panel.webview.onDidReceiveMessage(
+            message => {
+              switch (message.command) {
+                case 'cancel':
+                  this.panel.dispose();
+                  this.panel.onDidDispose();
+                  return;
+                case 'submit':
+                  console.log(message.text);
+                  return;
+              }
+            },
+            undefined,
+            this.context.subscriptions
+          );
     }
 
     showFragment(fragment: Fragment) {

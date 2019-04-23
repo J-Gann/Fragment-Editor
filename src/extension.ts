@@ -6,7 +6,7 @@ import { FragmentProvider } from './fragmentProvider';
 
 
 export function activate(context: vscode.ExtensionContext) {
-	const fragmentProvider = new FragmentProvider();
+	const fragmentProvider = new FragmentProvider(context);
 	vscode.window.registerTreeDataProvider('fragmentEditor', fragmentProvider);
 	vscode.commands.registerCommand('fragmentEditor.addEntry', () => fragmentProvider.addEntry());
 	vscode.commands.registerCommand('fragmentEditor.editEntry', (fragment: Fragment) => fragmentProvider.editEntry(fragment));

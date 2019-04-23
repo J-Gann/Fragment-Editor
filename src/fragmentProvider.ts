@@ -13,12 +13,12 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
 	private _onDidChangeTreeData: vscode.EventEmitter<Fragment | undefined> = new vscode.EventEmitter<Fragment | undefined>();
 	readonly onDidChangeTreeData: vscode.Event<Fragment | undefined> = this._onDidChangeTreeData.event;
 
-    constructor()
+    constructor(context: vscode.ExtensionContext)
     {
         this.database = new Database();
         this.fragmentListFilter = "";
         this.fragmentDir = require('os').homedir() + "/fragments/";
-        this.fragmentEditor = new FragmentEditor();
+        this.fragmentEditor = new FragmentEditor(context);
     }
 
     getTreeItem(element: Fragment): vscode.TreeItem
