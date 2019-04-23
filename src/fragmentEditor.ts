@@ -95,22 +95,25 @@ function getWebviewContent(fragment: Fragment, style: vscode.Uri) {
         <title>${fragment.label}</title>
         <link rel="stylesheet" href="${style}">
         <style>
-            input { width:100%; color:white; font-size: 15px; }
-            textarea { width:100%; color:white; font-size: 15px; height: auto; }
+            input { width:100%; color:white; font-size: 15px; border: none }
+            textarea { width:100%; color:white; font-size: 15px; height: auto; resize: none; }
         </style>
     </head>
     <body>
-        <h3 id="label">${fragment.label}</h3>
-        Information: <input id="information" type="text" value="${fragment.information}">
-        Keywords: <input id="keywords" type="text" value="${fragment.keywords}">
-        Code: <textarea id="code" rows="16">${fragment.code}</textarea>
-        Codelength:<input style="color:lightgrey;" id="codelength" type="text" value="${fragment.length}" disabled>
-        Language: <input id="language" type="text" value="${fragment.language}">
-        Domain: <input id="domain" type="text" value="${fragment.domain}">
-        Placeholders: <input id="placeholders" type="text" value="${fragment.placeHolders}">
-        Placeholdercount: <input style="color:lightgrey;" id="placeholdercount" type="number" value="${fragment.placeHolderCount}" disabled>
-        <button onclick="submitFunction()" class="btn waves-effect waves-light" type="submit" name="action">Save</button>
-        <button onclick="cancelFunction()" class="btn waves-effect waves-light" type="submit" name="action">Cancel</button>
+
+            <h3 style="float: left; max-width: 70%; overflow: hidden;" id="label" >${fragment.label}</h3>
+            <button style="float: right; margin: 10px; margin-top: 35px" onclick="cancelFunction()" class="btn waves-effect waves-light" type="submit" name="action">Cancel</button>
+            <button style="float: right; margin: 10px; margin-top: 35px" onclick="submitFunction()" class="btn waves-effect waves-light" type="submit" name="action">Save</button>
+            <br><br><br><br><br>
+            Information: <input id="information" type="text" value="${fragment.information}">
+            Keywords: <input id="keywords" type="text" value="${fragment.keywords}">
+            Code: <textarea id="code" rows="16">${fragment.code}</textarea>
+            Codelength:<input style="color:lightgrey;" id="codelength" type="text" value="${fragment.length}" disabled>
+            Language: <input id="language" type="text" value="${fragment.language}">
+            Domain: <input id="domain" type="text" value="${fragment.domain}">
+            Placeholders: <input id="placeholders" type="text" value="${fragment.placeHolders}">
+            Placeholdercount: <input style="color:lightgrey;" id="placeholdercount" type="number" value="${fragment.placeHolderCount}" disabled>
+
 
         <script>
             const vscode = acquireVsCodeApi();

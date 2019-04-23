@@ -1,4 +1,5 @@
 import { Fragment } from "./fragment";
+import * as vscode from 'vscode';
 
 import sql = require('sql.js');
 import fs = require("fs");
@@ -64,11 +65,66 @@ export class Database {
         return Array.from(this.fragments.values());
     }
 
+    getExistingLanguages(): string[]
+    {
+        var languages: string[] = [];
+        this.fragments.forEach(element => {
+            var language = element.language;
+            if(!languages.includes(language))
+            {
+                languages.push(language);
+            }
+        });
+        return languages;
+    }
+
+    getExistingDomains(): string[]
+    {
+        var domains: string[] = [];
+        this.fragments.forEach(element => {
+            var domain = element.domain;
+            if(!domains.includes(domain))
+            {
+                domains.push(domain);
+            }
+        });
+        return domains;
+    }
+
     getFilteredFragments(filter: string): Fragment[] {
         if (filter === "") {
             return Array.from(this.fragments.values());
         }
-        return Array.from(this.fragments.values()).filter(fragment => fragment.label.toLowerCase().includes(filter.toLowerCase()));
+
+        var filterList = filter.split(",");
+
+        let fragmentList: Fragment[] = Array.from(this.fragments.values());
+
+        filterList.forEach((filterElement: string) =>
+        {
+            if(filterElement.includes("label:") && filterElement.indexOf("label:") === 0)     // Filtern nach Fragmenten, die die gesuchte Label als Substring haben
+            {
+                filterElement = filterElement.split(":")[1];
+                fragmentList = fragmentList.filter(fragment => fragment.label.toLowerCase().includes(filterElement.toLowerCase()));
+            }
+            if(filterElement.includes("language:") && filterElement.indexOf("language:") === 0)     // Filtern nach Fragmenten, die die gesuchte Sprache als Substring haben
+            {
+                filterElement = filterElement.split(":")[1];
+                fragmentList = fragmentList.filter(fragment => fragment.language.toLowerCase().includes(filterElement.toLowerCase()));    
+            }
+            if(filterElement.includes("domain:") && filterElement.indexOf("domain:") === 0)     // Filtern nach Fragmenten, die die gesuchte Domäne als Substring haben
+            {
+                filterElement = filterElement.split(":")[1];
+                fragmentList = fragmentList.filter(fragment => fragment.domain.toLowerCase().includes(filterElement.toLowerCase()));    
+            }
+            if(filterElement.includes("keyword:") && filterElement.indexOf("keyword:") === 0)   // Filtern nach Fragmenten, die das exakte gesuchte Keyword besitzen
+            {
+                filterElement = filterElement.split(":")[1];
+                fragmentList = fragmentList.filter(fragment => fragment.keywords.split(",").includes(filterElement));
+            }
+        });
+        return fragmentList;
+        //Original: return Array.from(this.fragments.values()).filter(fragment => fragment.label.toLowerCase().includes(filter.toLowerCase()));
     }
 
     getFragment(label: string): any {

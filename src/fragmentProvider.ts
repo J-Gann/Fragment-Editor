@@ -103,7 +103,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
      */
     filter(): void
     {
-        var input = vscode.window.showInputBox({prompt: "Input a string which will be searched for", value: this.fragmentListFilter});
+        var input = vscode.window.showInputBox({prompt: "Search for Fragment which contains all the properties searched for as substring in the corresponding property | Usage: <property>:<searchvalue>{,<property>:<searchvalue>} | Properties: label, keyword, language, domain", value: this.fragmentListFilter});
 
         input.then((value) =>
         {
