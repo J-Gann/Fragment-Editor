@@ -67,7 +67,7 @@ export class FragmentEditor {
         this.panel.title = fragment.label;
 
         const path = require("path");
-        const onDiskPath = vscode.Uri.file(path.join(this.context.extensionPath, 'style', 'materialstyle.css'));
+        const onDiskPath = vscode.Uri.file(path.join(this.context.extensionPath, 'external/materialize', 'materialstyle.css'));
     
         const style = onDiskPath.with({ scheme: 'vscode-resource' });
 
