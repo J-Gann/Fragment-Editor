@@ -56,12 +56,16 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
      */
     addEntry(): void
     {
+        var input = vscode.window.showInputBox({prompt: "Input a label for the Fragment"});
         var editor = vscode.window.activeTextEditor;
 
         if(editor)
         {
-            var newCode = editor.selection;
-            var input = vscode.window.showInputBox({prompt: "Input a label for the Fragment"});
+            var selection = editor.selection;
+            var textDocument = editor.document;
+            var text = textDocument.getText(new vscode.Range(selection.start, selection.end));
+
+            console.log(text);
 
             input.then((value) =>
             {
@@ -75,9 +79,8 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
                 }
                 else if(!this.database.getFragment(value))
                 {
-                    this.database.addFragment(String(value), { 
-                        code: String(newCode) 
-                    });
+                    this.database.addFragment(String(value), {code:String(text)});
+    
                     vscode.window.showInformationMessage("Fragment Added");
                 }
                 else
