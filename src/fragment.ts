@@ -10,9 +10,8 @@ export class Fragment extends vscode.TreeItem {
     placeHolderCount: number;
     placeHolders: string;
 
-    constructor(public readonly label: string, {information = "", keywords = "", code = "", 
-                                                language = "", domain = "",
-                                                placeHolders = ""}) {
+    constructor(public readonly label: string, information: string, keywords: string, 
+        code:string, language: string, domain: string, placeHolders: string) {
         super(label);
         this.information = information; //placeholder reihenfolge
         this.keywords = keywords;
@@ -32,16 +31,11 @@ export class Fragment extends vscode.TreeItem {
     get tooltip(): string {
         let tip = "";
         tip = this.label + "\n";
-        for(var cnt = 0; cnt < this.label.length; cnt++)
-        {
+        for(var cnt = 0; cnt < this.label.length; cnt++) {
             tip += "-";
-        }
-        if(this.code.split("\n\n").length < 5)
-        {
+        } if(this.code.split("\n\n").length < 5) {
             tip += "\n" + this.code;
-        }
-        else
-        {
+        } else {
             tip += "\n" + this.information;
         }
         tip += "\n\n" + this.keywords;

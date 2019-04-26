@@ -75,7 +75,9 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
                 }
                 else if(!this.database.getFragment(value))
                 {
-                    this.database.addFragment(String(value), {code=newCode});
+                    this.database.addFragment(String(value), { 
+                        code: String(newCode) 
+                    });
                     vscode.window.showInformationMessage("Fragment Added");
                 }
                 else
