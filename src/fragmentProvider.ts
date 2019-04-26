@@ -58,38 +58,43 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
     {
         var input = vscode.window.showInputBox({prompt: "Input a label for the Fragment"});
         var editor = vscode.window.activeTextEditor;
+        var selection: vscode.Selection;
+        var textDocument: vscode.TextDocument;
+        var text: String;
 
         if(editor)
         {
-            var selection = editor.selection;
-            var textDocument = editor.document;
-            var text = textDocument.getText(new vscode.Range(selection.start, selection.end));
-
-            console.log(text);
-
-            input.then((value) =>
-            {
-                if(value === "")
-                {
-                    vscode.window.showErrorMessage("Fragment Not Added (no empty label allowed)");
-                }
-                else if(value === undefined)
-                {
-                    vscode.window.showErrorMessage("Fragment Not Added");
-                }
-                else if(!this.database.getFragment(value))
-                {
-                    this.database.addFragment(String(value), {code:String(text)});
-    
-                    vscode.window.showInformationMessage("Fragment Added");
-                }
-                else
-                {
-                    vscode.window.showErrorMessage("Fragment Not Added (label has to be unique)");
-                }
-                this.refresh();
-            });
+            selection = editor.selection;
+            textDocument = editor.document;
+            text = textDocument.getText(new vscode.Range(selection.start, selection.end));
         }
+        else
+        {
+            text = "";
+        }
+
+        input.then((value) =>
+        {
+            if(value === "")
+            {
+                vscode.window.showErrorMessage("Fragment Not Added (no empty label allowed)");
+            }
+            else if(value === undefined)
+            {
+                vscode.window.showErrorMessage("Fragment Not Added");
+            }
+            else if(!this.database.getFragment(value))
+            {
+                this.database.addFragment(String(value), {code:String(text)});
+    
+                vscode.window.showInformationMessage("Fragment Added");
+            }
+            else
+            {
+                vscode.window.showErrorMessage("Fragment Not Added (label has to be unique)");
+            }
+            this.refresh();
+        });
     }
 
     /**
