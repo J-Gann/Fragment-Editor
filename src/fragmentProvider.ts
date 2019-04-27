@@ -159,8 +159,6 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
          * 7) If matching fragments were found, replace line with fragments, otherwise leave original line untouched
          */
 
-        // TODO: Keep original code in lines where no matching fragments were found
-
         // 1) Split code in array of lines
         var codeLines = code.split("\n");
 
@@ -262,7 +260,26 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
             }
             else
             {
-                newCode += fragmentArray[cnt].code + '\n';
+                // include whitespace bevore inserted fragments
+                var previousCode = codeLines[cnt];
+                var whitespace = "";
+                for(var cnt1 = 0; cnt1 < previousCode.length; cnt1++)
+                {
+                    if(previousCode[cnt1] === " ")
+                    {
+                        whitespace += " ";
+                    }
+                    else if(previousCode[cnt1] === "\t")
+                    {
+                        whitespace += "\t";
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                newCode += whitespace + fragmentArray[cnt].code + '\n';
             }
         }
         return newCode;
