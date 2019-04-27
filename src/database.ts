@@ -44,14 +44,14 @@ export class Database {
         }
 
         res.values.forEach((element: any[]) => {
-            this.fragments.set(element[0], new Fragment(element[0], {
-                information: element[1], 
-                keywords: element[2], 
-                code: element[3],
-                language: element[4],
-                domain: element[5],                  
-                placeHolders: element[7]
-            }));
+            this.fragments.set(element[0], new Fragment(element[0], 
+                element[1], 
+                element[2], 
+                element[3],
+                element[4],
+                element[5],                  
+                element[7]
+            ));
         });
     }
 
@@ -136,11 +136,26 @@ export class Database {
      * return false if fragment already exists
      */
 
-    addFragment(label: string, {}): boolean {
+    addFragment(label: string, {
+        information = "", 
+        keywords = "", 
+        code = "",                                        
+        language = "", 
+        domain = "",
+        placeHolders = ""
+    }): boolean {
         if (this.fragments.has(label)) {
             return false;
         }
-        const newFragment = new Fragment(label, {});
+        const newFragment = new Fragment(
+            label, 
+            information, 
+            keywords, 
+            code, 
+            language, 
+            domain, 
+            placeHolders
+        );
         this.fragments.set(label, newFragment);
         this.db.run("INSERT INTO fragments VALUES (?,?,?,?,?,?,?,?)", [newFragment.label, newFragment.information, newFragment.keywords, newFragment.code, newFragment.language, newFragment.domain, newFragment.placeHolderCount, newFragment.placeHolders]);
         this.persist();
@@ -165,14 +180,15 @@ export class Database {
 
         var options = options || {};
 
-        const newFragment = new Fragment(label, {
-            information: options.information || oldFragment.information, 
-            keywords: options.keywords || oldFragment.keywords, 
-            code: options.code || oldFragment.code,
-            language: options.language || oldFragment.language,
-            domain: options.domain || oldFragment.domain,                  
-            placeHolders: options.placeHolders || oldFragment.placeHolders
-        });
+        const newFragment = new Fragment(
+            label, 
+            options.information || oldFragment.information, 
+            options.keywords || oldFragment.keywords, 
+            options.code || oldFragment.code,
+            options.language || oldFragment.language,
+            options.domain || oldFragment.domain,                  
+            options.placeHolders || oldFragment.placeHolders
+        );
 
         this.fragments.set(label, newFragment);
         this.db.run("UPDATE fragments SET information=? , keywords=?, code=?, language=?, domain=?, placeholdercount=?, placeholders=? WHERE label=?", [newFragment.information, newFragment.keywords, newFragment.code, newFragment.language, newFragment.domain, newFragment.placeHolderCount, newFragment.placeHolders, newFragment.label]);

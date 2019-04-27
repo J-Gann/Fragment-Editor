@@ -10,7 +10,7 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onView:fragmentEditor"
+		"*"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
@@ -48,7 +48,7 @@
 		"commands": [
 			{
 				"command": "fragmentEditor.addEntry",
-				"title": "Add",
+				"title": "Add Fragment From Selection",
 				"icon": "media/add.png"
 			},
 			{
@@ -67,6 +67,14 @@
 			}
 		],
 		"menus": {
+			"editor/context":
+			[
+				{
+					"command": "fragmentEditor.addEntry",
+					"group": "9_cutcopypaste",
+					"when": "editorHasSelection"
+				}
+			],
 			"view/title": [
 				{
 					"command": "fragmentEditor.addEntry",
