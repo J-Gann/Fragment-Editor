@@ -14,7 +14,7 @@
 	],
 	"main": "./out/extension.js",
 	"contributes": {
-		"keybindings":[
+		"keybindings": [
 			{
 				"command": "fragmentEditor.addEntry",
 				"key": "ctrl+shift+n"
