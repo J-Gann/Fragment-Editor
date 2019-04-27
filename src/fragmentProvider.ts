@@ -147,6 +147,33 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
         this.refresh();
     }
 
+    findDefinedKeywords(code: String, keywords: String[]): String[]
+    {
+        var lines = code.split('\n');
+        var definedKeywords: String[] = [];
+        keywords.forEach((keyword: String) =>
+        {
+            var length = keyword.length;
+            for(var cnt = 0; cnt < lines.length; cnt++)
+            {
+                if(lines[cnt].indexOf(String(keyword+":")) !== -1)
+                {
+                    definedKeywords.push(keyword+"#"+cnt+"#"+lines[cnt].indexOf(String(keyword+":")));
+                }
+                if(lines[cnt].indexOf(String(keyword+"=")) !== -1)
+                {
+                    definedKeywords.push(keyword+"#"+cnt+"#"+lines[cnt].indexOf(String(keyword+"=")));
+                }
+                if(lines[cnt].indexOf(String(keyword+" =")) !== -1)
+                {
+                    definedKeywords.push(keyword+"#"+cnt+"#"+lines[cnt].indexOf(String(keyword+" =")));
+                }
+            }
+        });
+        // Format: ["keyword#line#position",...]
+        return definedKeywords;
+    }
+
     fragmentOutOfExistingFragments(code: String)
     {
         /**
@@ -155,15 +182,31 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
          * 3) For each line: Split resulting code into array of keywords
          * 4) For each line: Find all fragments that have at least one keyword in common
          * 5) For each line: Count occurence of each fragment
-         * 6) For each line: Replace line by code of fragment with highest count
-         * 7) If matching fragments were found, replace line with fragments, otherwise leave original line untouched
+         * 6) For each line: Reduce count of fragment for each keyword i has that is not present in the selected code
+         * 7) For each line: Replace line by code of fragment with highest count
+         * 8) If matching fragments were found, replace line with fragments, otherwise leave original line untouched
          */
+
+        // Measurement how good a fragment fits to a line:
+        // 1) Calculate how many keywords the line and the fragment have in common
+        // 2) Substract how many keywords the fragment has but the line does not have (Discard fragment if it has too many false keywords)
+        // 3) If the resulting number is below zero, the fragment dows not get selected
+        // 4) If the resulting number is above zero, the higher the number, the better the fit
+
+        // TODO: Improve / test count of insertion fragment candidates
+        
+        // TODO: Search if keywords are defined in the selected code, if thats the case they are parameters which have to stay
+
+        // TODO: Implement a way to insert certain keywords into inserted fragments as parameters
+
+        // Question: Do we add the keywords of the inserted fragments to the keywords of the new fragment? If a fragment has too much keywords, it maybe will always be inserted.
+        //           Maybe also add a panelty for insertion fragment candidates if it has keywords that dont occur in the selected code
 
         // 1) Split code in array of lines
         var codeLines = code.split("\n");
 
         // 2) For each line: Delete all predefined symbols from the code
-        var deletable = ['\r', '(', ')', '{', '}', '[', ']',';', ';', '\\', ':', '/', '-', '+', '<', '>', '&', '|', '?', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '=', '%', '!'];
+        var deletable = ['\r', '(', ')', '{', '}', '[', ']',';', ';', ':', '/', '-', '+', '<', '>', '&', '|', '?', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '=', '%', '!'];
         var keywordArrays: String[][] = [];
         codeLines.forEach((line: String) =>
         {
@@ -192,6 +235,17 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
             }));
         });
 
+        var findKeywords: String[] = [];
+        keywordArrays.forEach((keywordArray: String[]) =>
+        {
+            keywordArray.forEach((keyword: String) =>
+            {
+                findKeywords.push(keyword);
+            });
+        });
+
+        console.log(this.findDefinedKeywords(code, findKeywords));
+
         // 4) For each line: Find all fragments that have at least one keyword in common
         var fragmentsArrays: Fragment[][] = [];
         keywordArrays.forEach((keywordArray: String[]) =>
@@ -206,7 +260,6 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
             });
             fragmentsArrays.push(fragments);
         });
-
 
         // 5) For each line: Count occurence of each fragment
         var fragmentsMaps: Map<Fragment,number>[] = [];
@@ -231,7 +284,40 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
             fragmentsMaps.push(fragmentsMap);
         });
 
-        // 6) For each line: Replace line by code of fragment with highest count
+        // 6) For each line: Reduce count of fragment for each keyword i has that is not present in the selected code
+        for(var cnt = 0; cnt < fragmentsMaps.length; cnt++)
+        {
+            for (let entrie of fragmentsMaps[cnt].entries())
+            {
+                var fragment = entrie[0];
+                var count = entrie[1];
+                var keywords: String[] = fragment.keywords.split(',');
+
+                // Substract one for each keyword the line does not have but the fragment has
+                keywords.forEach((keyword: String) =>
+                {
+                    if(!keywordArrays[cnt].includes(keyword))
+                    {
+                        count -= 1;
+                    }
+                });
+
+                // Substract one for each keyword the fragment does not have but the line has: Too restrictive
+                /*
+                keywordArrays[cnt].forEach((keyword: String) =>
+                {
+                    if(!keywords.includes(keyword))
+                    {
+                        count -= 1;
+                    }
+                });
+                */
+                console.log(count);
+                fragmentsMaps[cnt].set(fragment, count);
+            }
+        }
+
+        // 7) For each line: Replace line by code of fragment with highest count
         var fragmentArray: Fragment[]  = [];
         fragmentsMaps.forEach((fragmentsMap: Map<Fragment,number>) =>
         {
@@ -248,10 +334,8 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
             fragmentArray.push(currentFragment!);
         });
 
-        // 7) If matching fragments were found, replace line with fragments, otherwise leave original line untouched
-
+        // 8) If matching fragments were found, replace line with fragments, otherwise leave original line untouched
         var newCode = "";
-
         for(var cnt = 0; cnt < fragmentArray.length; cnt++)
         {
             if(fragmentArray[cnt] === undefined)
@@ -260,7 +344,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
             }
             else
             {
-                // include whitespace bevore inserted fragments
+                // include whitespace before inserted fragments
                 var previousCode = codeLines[cnt];
                 var whitespace = "";
                 for(var cnt1 = 0; cnt1 < previousCode.length; cnt1++)
@@ -278,7 +362,6 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
                         break;
                     }
                 }
-
                 newCode += whitespace + fragmentArray[cnt].code + '\n';
             }
         }
