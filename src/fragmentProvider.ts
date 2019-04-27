@@ -156,6 +156,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
          * 4) For each line: Find all fragments that have at least one keyword in common
          * 5) For each line: Count occurence of each fragment
          * 6) For each line: Replace line by code of fragment with highest count
+         * 7) If matching fragments were found, replace line with fragments, otherwise leave original line untouched
          */
 
         // TODO: Keep original code in lines where no matching fragments were found
@@ -202,7 +203,6 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
             {
                 this.database.getFilteredFragments('keyword:'+keyword).forEach((fragment: Fragment) =>
                 {
-                    console.log(fragment);
                     fragments.push(fragment);
                 });
             });
@@ -215,17 +215,21 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
         fragmentsArrays.forEach((fragmentsArray: Fragment[]) =>
         {
             var fragmentsMap: Map<Fragment,number> = new Map();
-            fragmentsArray.forEach((fragment: Fragment) =>
+
+            if(fragmentsArray.length !== 0)
             {
-                if(!fragmentsMap.has(fragment))
+                fragmentsArray.forEach((fragment: Fragment) =>
                 {
-                    fragmentsMap.set(fragment, 1);
-                }
-                else
-                {
-                    fragmentsMap.set(fragment, fragmentsMap.get(fragment)! + 1);
-                }
-            });
+                    if(!fragmentsMap.has(fragment))
+                    {
+                        fragmentsMap.set(fragment, 1);
+                    }
+                    else
+                    {
+                        fragmentsMap.set(fragment, fragmentsMap.get(fragment)! + 1);
+                    }
+                });
+            }
             fragmentsMaps.push(fragmentsMap);
         });
 
@@ -246,13 +250,21 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
             fragmentArray.push(currentFragment!);
         });
 
+        // 7) If matching fragments were found, replace line with fragments, otherwise leave original line untouched
+
         var newCode = "";
 
-        fragmentArray.forEach((fragment: Fragment) =>
+        for(var cnt = 0; cnt < fragmentArray.length; cnt++)
         {
-            newCode += fragment.code + '\n';
-        });
-
+            if(fragmentArray[cnt] === undefined)
+            {
+                newCode += codeLines[cnt] + '\n';
+            }
+            else
+            {
+                newCode += fragmentArray[cnt].code + '\n';
+            }
+        }
         return newCode;
     }
 }
