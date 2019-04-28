@@ -147,33 +147,6 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
         this.refresh();
     }
 
-    findDefinedKeywords(code: String, keywords: String[]): String[]
-    {
-        var lines = code.split('\n');
-        var definedKeywords: String[] = [];
-        keywords.forEach((keyword: String) =>
-        {
-            var length = keyword.length;
-            for(var cnt = 0; cnt < lines.length; cnt++)
-            {
-                if(lines[cnt].indexOf(String(keyword+":")) !== -1)
-                {
-                    definedKeywords.push(keyword+"#"+cnt+"#"+lines[cnt].indexOf(String(keyword+":")));
-                }
-                if(lines[cnt].indexOf(String(keyword+"=")) !== -1)
-                {
-                    definedKeywords.push(keyword+"#"+cnt+"#"+lines[cnt].indexOf(String(keyword+"=")));
-                }
-                if(lines[cnt].indexOf(String(keyword+" =")) !== -1)
-                {
-                    definedKeywords.push(keyword+"#"+cnt+"#"+lines[cnt].indexOf(String(keyword+" =")));
-                }
-            }
-        });
-        // Format: ["keyword#line#position",...]
-        return definedKeywords;
-    }
-
     fragmentOutOfExistingFragments(code: String)
     {
         /**
@@ -192,15 +165,6 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
         // 2) Substract how many keywords the fragment has but the line does not have (Discard fragment if it has too many false keywords)
         // 3) If the resulting number is below zero, the fragment dows not get selected
         // 4) If the resulting number is above zero, the higher the number, the better the fit
-
-        // TODO: Improve / test count of insertion fragment candidates
-        
-        // TODO: Search if keywords are defined in the selected code, if thats the case they are parameters which have to stay
-
-        // TODO: Implement a way to insert certain keywords into inserted fragments as parameters
-
-        // Question: Do we add the keywords of the inserted fragments to the keywords of the new fragment? If a fragment has too much keywords, it maybe will always be inserted.
-        //           Maybe also add a panelty for insertion fragment candidates if it has keywords that dont occur in the selected code
 
         // 1) Split code in array of lines
         var codeLines = code.split("\n");
@@ -243,8 +207,6 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
                 findKeywords.push(keyword);
             });
         });
-
-        console.log(this.findDefinedKeywords(code, findKeywords));
 
         // 4) For each line: Find all fragments that have at least one keyword in common
         var fragmentsArrays: Fragment[][] = [];
@@ -312,7 +274,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
                     }
                 });
                 */
-                console.log(count);
+               
                 fragmentsMaps[cnt].set(fragment, count);
             }
         }
