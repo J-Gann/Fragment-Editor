@@ -85,7 +85,9 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
             }
             else if(!this.database.getFragment(value))
             {
-                this.database.addFragment(String(value), {code:String(text)});
+                var newCode = this.fragmentOutOfExistingFragments(text);
+
+                this.database.addFragment(String(value), {code:String(newCode)});
     
                 vscode.window.showInformationMessage("Fragment Added");
             }
@@ -143,5 +145,188 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
     {
         this.fragmentListFilter = "";
         this.refresh();
+    }
+
+    fragmentOutOfExistingFragments(code: String)
+    {
+        /**
+         * 1) Split code in array of lines
+         * 2) For each line: Delete all predefined symbols from the code
+         * 3) For each line: Split resulting code into array of keywords
+         * 4) For each line: Find all fragments that have at least one keyword in common
+         * 5) For each line: Count occurence of each fragment
+         * 6) For each line: Reduce count of fragment for each keyword i has that is not present in the selected code
+         * 7) For each line: Replace line by code of fragment with highest count
+         * 8) If matching fragments were found, replace line with fragments, otherwise leave original line untouched
+         */
+
+        // Measurement how good a fragment fits to a line:
+        // 1) Calculate how many keywords the line and the fragment have in common
+        // 2) Substract how many keywords the fragment has but the line does not have (Discard fragment if it has too many false keywords)
+        // 3) If the resulting number is below zero, the fragment dows not get selected
+        // 4) If the resulting number is above zero, the higher the number, the better the fit
+
+        // 1) Split code in array of lines
+        var codeLines = code.split("\n");
+
+        // 2) For each line: Delete all predefined symbols from the code
+        var deletable = ['\r', '(', ')', '{', '}', '[', ']',';', ';', ':', '/', '-', '+', '<', '>', '&', '|', '?', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '=', '%', '!'];
+        var keywordArrays: String[][] = [];
+        codeLines.forEach((line: String) =>
+        {
+            var reducedCode = "";
+            for(var cnt = 0; cnt < line.length; cnt++)
+            {
+                if(!deletable.includes(line[cnt]))
+                {
+                    reducedCode += line[cnt];
+                }
+                else
+                {
+                    reducedCode += " ";
+                }
+            }
+            keywordArrays.push(reducedCode.split(" ").filter((keyword: String) =>
+            {
+                if(keyword === '')
+                {
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
+            }));
+        });
+
+        var findKeywords: String[] = [];
+        keywordArrays.forEach((keywordArray: String[]) =>
+        {
+            keywordArray.forEach((keyword: String) =>
+            {
+                findKeywords.push(keyword);
+            });
+        });
+
+        // 4) For each line: Find all fragments that have at least one keyword in common
+        var fragmentsArrays: Fragment[][] = [];
+        keywordArrays.forEach((keywordArray: String[]) =>
+        {  
+            var fragments: Fragment[] = [];
+            keywordArray.forEach((keyword: String) =>
+            {
+                this.database.getFilteredFragments('keyword:'+keyword).forEach((fragment: Fragment) =>
+                {
+                    fragments.push(fragment);
+                });
+            });
+            fragmentsArrays.push(fragments);
+        });
+
+        // 5) For each line: Count occurence of each fragment
+        var fragmentsMaps: Map<Fragment,number>[] = [];
+        fragmentsArrays.forEach((fragmentsArray: Fragment[]) =>
+        {
+            var fragmentsMap: Map<Fragment,number> = new Map();
+
+            if(fragmentsArray.length !== 0)
+            {
+                fragmentsArray.forEach((fragment: Fragment) =>
+                {
+                    if(!fragmentsMap.has(fragment))
+                    {
+                        fragmentsMap.set(fragment, 1);
+                    }
+                    else
+                    {
+                        fragmentsMap.set(fragment, fragmentsMap.get(fragment)! + 1);
+                    }
+                });
+            }
+            fragmentsMaps.push(fragmentsMap);
+        });
+
+        // 6) For each line: Reduce count of fragment for each keyword i has that is not present in the selected code
+        for(var cnt = 0; cnt < fragmentsMaps.length; cnt++)
+        {
+            for (let entrie of fragmentsMaps[cnt].entries())
+            {
+                var fragment = entrie[0];
+                var count = entrie[1];
+                var keywords: String[] = fragment.keywords.split(',');
+
+                // Substract one for each keyword the line does not have but the fragment has
+                keywords.forEach((keyword: String) =>
+                {
+                    if(!keywordArrays[cnt].includes(keyword))
+                    {
+                        count -= 1;
+                    }
+                });
+
+                // Substract one for each keyword the fragment does not have but the line has: Too restrictive
+                /*
+                keywordArrays[cnt].forEach((keyword: String) =>
+                {
+                    if(!keywords.includes(keyword))
+                    {
+                        count -= 1;
+                    }
+                });
+                */
+               
+                fragmentsMaps[cnt].set(fragment, count);
+            }
+        }
+
+        // 7) For each line: Replace line by code of fragment with highest count
+        var fragmentArray: Fragment[]  = [];
+        fragmentsMaps.forEach((fragmentsMap: Map<Fragment,number>) =>
+        {
+            var currentFragment: Fragment;
+            var currentCount = 0;
+            for (let entrie of fragmentsMap.entries())
+            {
+                if(entrie[1] > currentCount)
+                {
+                    currentFragment = entrie[0];
+                    currentCount = entrie[1];
+                }
+            }
+            fragmentArray.push(currentFragment!);
+        });
+
+        // 8) If matching fragments were found, replace line with fragments, otherwise leave original line untouched
+        var newCode = "";
+        for(var cnt = 0; cnt < fragmentArray.length; cnt++)
+        {
+            if(fragmentArray[cnt] === undefined)
+            {
+                newCode += codeLines[cnt] + '\n';
+            }
+            else
+            {
+                // include whitespace before inserted fragments
+                var previousCode = codeLines[cnt];
+                var whitespace = "";
+                for(var cnt1 = 0; cnt1 < previousCode.length; cnt1++)
+                {
+                    if(previousCode[cnt1] === " ")
+                    {
+                        whitespace += " ";
+                    }
+                    else if(previousCode[cnt1] === "\t")
+                    {
+                        whitespace += "\t";
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                newCode += whitespace + fragmentArray[cnt].code + '\n';
+            }
+        }
+        return newCode;
     }
 }

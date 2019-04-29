@@ -4,7 +4,6 @@ import * as vscode from 'vscode';
 import { Fragment } from "./fragment";
 import { FragmentProvider } from './fragmentProvider';
 
-
 export function activate(context: vscode.ExtensionContext) {
 	const fragmentProvider = new FragmentProvider(context);
 	vscode.window.registerTreeDataProvider('fragmentEditor', fragmentProvider);
