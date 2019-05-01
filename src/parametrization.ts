@@ -1,0 +1,179 @@
+import * as vscode from 'vscode';
+import { Fragment } from "./fragment";
+import { Database } from './database';
+
+/**
+ * Try to create a fragment out of existing fragments
+ */
+export class FOEF
+{
+    /**
+     * Calculate a parametrized snippet of the code and return it
+     * @param code Code to parametrize
+     */
+    static parametrize(code: string): string
+    {
+        // 1) Split code in array of lines
+        var codeLines = code.split("\n");
+
+        // 2) For each line: Delete all predefined symbols from the code
+        var deletable = ['\r', '(', ')', '{', '}', '[', ']',';', ';', ':', '/', '-', '+', '<', '>', '&', '|', '?', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '=', '%', '!'];
+        var keywordArrays: string[][] = [];
+        codeLines.forEach((line: string) =>
+        {
+            var reducedCode = "";
+            for(var cnt = 0; cnt < line.length; cnt++)
+            {
+                if(!deletable.includes(line[cnt]))
+                {
+                    reducedCode += line[cnt];
+                }
+                else
+                {
+                    reducedCode += " ";
+                }
+            }
+            keywordArrays.push(reducedCode.split(" ").filter((keyword: string) =>
+            {
+                if(keyword === '')
+                {
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
+            }));
+        });
+
+        var findKeywords: string[] = [];
+        keywordArrays.forEach((keywordArray: string[]) =>
+        {
+            keywordArray.forEach((keyword: string) =>
+            {
+                findKeywords.push(keyword);
+            });
+        });
+
+        // 4) For each line: Find all fragments that have at least one keyword in common
+        var fragmentsArrays: Fragment[][] = [];
+        keywordArrays.forEach((keywordArray: string[]) =>
+        {  
+            var fragments: Fragment[] = [];
+            keywordArray.forEach((keyword: string) =>
+            {
+                Database.getFilteredFragments('keyword:'+keyword).forEach((fragment: Fragment) =>
+                {
+                    fragments.push(fragment);
+                });
+            });
+            fragmentsArrays.push(fragments);
+        });
+
+        // 5) For each line: Count occurence of each fragment
+        var fragmentsMaps: Map<Fragment,number>[] = [];
+        fragmentsArrays.forEach((fragmentsArray: Fragment[]) =>
+        {
+            var fragmentsMap: Map<Fragment,number> = new Map();
+
+            if(fragmentsArray.length !== 0)
+            {
+                fragmentsArray.forEach((fragment: Fragment) =>
+                {
+                    if(!fragmentsMap.has(fragment))
+                    {
+                        fragmentsMap.set(fragment, 1);
+                    }
+                    else
+                    {
+                        fragmentsMap.set(fragment, fragmentsMap.get(fragment)! + 1);
+                    }
+                });
+            }
+            fragmentsMaps.push(fragmentsMap);
+        });
+
+        // 6) For each line: Reduce count of fragment for each keyword i has that is not present in the selected code
+        for(var cnt = 0; cnt < fragmentsMaps.length; cnt++)
+        {
+            for (let entrie of fragmentsMaps[cnt].entries())
+            {
+                var fragment = entrie[0];
+                var count = entrie[1];
+                var keywords: string[] = fragment.keywords.split(',');
+
+                // Substract one for each keyword the line does not have but the fragment has
+                keywords.forEach((keyword: string) =>
+                {
+                    if(!keywordArrays[cnt].includes(keyword))
+                    {
+                        count -= 1;
+                    }
+                });
+
+                // Substract one for each keyword the fragment does not have but the line has: Too restrictive
+                /*
+                keywordArrays[cnt].forEach((keyword: string) =>
+                {
+                    if(!keywords.includes(keyword))
+                    {
+                        count -= 1;
+                    }
+                });
+                */
+               
+                fragmentsMaps[cnt].set(fragment, count);
+            }
+        }
+
+        // 7) For each line: Replace line by code of fragment with highest count
+        var fragmentArray: Fragment[]  = [];
+        fragmentsMaps.forEach((fragmentsMap: Map<Fragment,number>) =>
+        {
+            var currentFragment: Fragment;
+            var currentCount = 0;
+            for (let entrie of fragmentsMap.entries())
+            {
+                if(entrie[1] > currentCount)
+                {
+                    currentFragment = entrie[0];
+                    currentCount = entrie[1];
+                }
+            }
+            fragmentArray.push(currentFragment!);
+        });
+
+        // 8) If matching fragments were found, replace line with fragments, otherwise leave original line untouched
+        var newCode = "";
+        for(var cnt = 0; cnt < fragmentArray.length; cnt++)
+        {
+            if(fragmentArray[cnt] === undefined)
+            {
+                newCode += codeLines[cnt] + '\n';
+            }
+            else
+            {
+                // include whitespace before inserted fragments
+                var previousCode = codeLines[cnt];
+                var whitespace = "";
+                for(var cnt1 = 0; cnt1 < previousCode.length; cnt1++)
+                {
+                    if(previousCode[cnt1] === " ")
+                    {
+                        whitespace += " ";
+                    }
+                    else if(previousCode[cnt1] === "\t")
+                    {
+                        whitespace += "\t";
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                newCode += whitespace + fragmentArray[cnt].code + '\n';
+            }
+        }
+        return newCode;
+    }
+}

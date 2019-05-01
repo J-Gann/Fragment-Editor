@@ -18,6 +18,6 @@ suite("Extension Tests", function () {
     // Defines a Mocha unit test
     test("Database Test", function() {
         const db = new Database();
-        assert(db.getFilteredFragments("asd").length === 3);
+        assert(Database.getFilteredFragments("asd").length === 3);
     });
 });

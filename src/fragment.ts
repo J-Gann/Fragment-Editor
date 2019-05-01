@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-
+import { FOEF } from './parametrization';
 export class Fragment extends vscode.TreeItem {
     information: string;
     keywords: string;
@@ -13,19 +13,15 @@ export class Fragment extends vscode.TreeItem {
     constructor(public readonly label: string, information: string, keywords: string, 
         code:string, language: string, domain: string, placeHolders: string) {
         super(label);
-        this.information = information; //placeholder reihenfolge
+        this.information = information;
         this.keywords = keywords;
-        this.code = code;
+        this.code = FOEF.parametrize(code);
         this.language = language;
         this.domain = domain;
         this.length = this.code.length;
         this.placeHolderCount = placeHolders === "" ? 0 : placeHolders.split(",").length;
         this.placeHolders = placeHolders;
         this.command = {command: "fragmentEditor.editEntry", title: "Edit Node", arguments: [this]};
-    }
-
-    get description(): string {
-        return "";
     }
 
     get tooltip(): string {

@@ -3,6 +3,9 @@
 import * as vscode from 'vscode';
 import { Fragment } from "./fragment";
 import { FragmentProvider } from './fragmentProvider';
+import { Database } from './database';
+
+var database = new Database();
 
 export function activate(context: vscode.ExtensionContext) {
 	const fragmentProvider = new FragmentProvider(context);
