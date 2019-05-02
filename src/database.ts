@@ -1,8 +1,6 @@
 import { Fragment } from "./fragment";
-import * as vscode from 'vscode';
 import sql = require('sql.js');
 import fs = require("fs");
-import path = require("path");
 
 export class Database {
     private static database: any;
@@ -30,7 +28,7 @@ export class Database {
 
         const filebuffer = fs.readFileSync(Database.fragmentDir + '/fragments.database');
         Database.database = new sql.Database(filebuffer);
-        Database.database.run("CREATE TABLE IF NOT EXISTS fragments (label char PRIMARY KEY,information char NOT NULL,keywords char NOT NULL,code char NOT NULL,language char NOT NULL,domain char NOT NULL,placeholdercount int(11) NOT NULL,placeholders char NOT NULL);");
+        Database.database.run("CREATE TABLE IF NOT EXISTS fragments (label char PRIMARY KEY,prefix char,scope char,body char,description char,keywords char,domain char,placeholders char);");
         Database.persist();
     }
 
@@ -41,14 +39,18 @@ export class Database {
         }
 
         res.values.forEach((element: any[]) => {
-            Database.loadedFragments.set(element[0], new Fragment(element[0], 
-                element[1], 
-                element[2], 
-                element[3],
-                element[4],
-                element[5],                  
-                element[7]
-            ));
+            var label = element[0];
+            var prefix = element[1];
+            var scope = element[2];
+            var body = element[3];
+            var description = element[4];
+            var keywords = element[5];
+            var domain = element[6];
+            var placeholders = element[7];
+
+            var newFragment = new Fragment(label, {prefix: prefix, scope: scope, body: body, description: description, keywords: keywords, domain: domain, placeholders: placeholders});
+
+            Database.loadedFragments.set(label, newFragment);
         });
     }
 
@@ -78,27 +80,45 @@ export class Database {
                 filterElement = filterElement.split(":")[1];
                 fragmentList = fragmentList.filter(fragment => fragment.label.toLowerCase().includes(filterElement.toLowerCase()));
             }
-            if(filterElement.includes("language:") && filterElement.indexOf("language:") === 0)     // Filtern nach Fragmenten, die die gesuchte Sprache als Substring haben
+            if(filterElement.includes("scope:") && filterElement.indexOf("scope:") === 0)     // Filtern nach Fragmenten, die die gesuchte Sprache als Substring haben
             {
                 filterElement = filterElement.split(":")[1];
-                fragmentList = fragmentList.filter(fragment => fragment.language.toLowerCase().includes(filterElement.toLowerCase()));    
+                fragmentList = fragmentList.filter(fragment =>
+                {
+                    if(fragment.scope !== undefined)
+                    {
+                        fragment.scope.toLowerCase().includes(filterElement.toLowerCase());
+                    }
+                });   
             }
             if(filterElement.includes("domain:") && filterElement.indexOf("domain:") === 0)     // Filtern nach Fragmenten, die die gesuchte Domäne als Substring haben
             {
                 filterElement = filterElement.split(":")[1];
-                fragmentList = fragmentList.filter(fragment => fragment.domain.toLowerCase().includes(filterElement.toLowerCase()));    
+                fragmentList = fragmentList.filter(fragment =>
+                    {
+                        if(fragment.domain !== undefined)
+                        {
+                            fragment.domain.toLowerCase().includes(filterElement.toLowerCase());
+                        }
+                    });      
             }
             if(filterElement.includes("keyword:") && filterElement.indexOf("keyword:") === 0)   // Filtern nach Fragmenten, die das exakte gesuchte Keyword besitzen
             {
                 filterElement = filterElement.split(":")[1];
-                fragmentList = fragmentList.filter(fragment => fragment.keywords.split(",").includes(filterElement));
+                fragmentList = fragmentList.filter(fragment =>
+                    {
+                        if(fragment.keywords !== undefined)
+                        {
+                            fragment.keywords.includes(filterElement);
+                        }
+                    });   
             }
         });
         return fragmentList;
-        //Original: return Array.from(Database.fragments.values()).filter(fragment => fragment.label.toLowerCase().includes(filter.toLowerCase()));
     }
 
-    static getFragment(label: string): any {
+    static getFragment(label: string): Fragment | undefined
+    {
         return Database.loadedFragments.get(label);
     }
 
@@ -107,33 +127,20 @@ export class Database {
      * return false if fragment already exists
      */
 
-    static addFragment(label: string, {
-        information = "", 
-        keywords = "", 
-        code = "",                                        
-        language = "", 
-        domain = "",
-        placeHolders = ""
-    }): boolean {
-        if (Database.loadedFragments.has(label)) {
+    static addFragment(fragment: Fragment)
+    {
+        if(Database.loadedFragments.has(fragment.label))
+        {
             return false;
         }
-        const newFragment = new Fragment(
-            label, 
-            information, 
-            keywords, 
-            code, 
-            language, 
-            domain, 
-            placeHolders
-        );
-        Database.loadedFragments.set(label, newFragment);
-        Database.database.run("INSERT INTO fragments VALUES (?,?,?,?,?,?,?,?)", [newFragment.label, newFragment.information, newFragment.keywords, newFragment.code, newFragment.language, newFragment.domain, newFragment.placeHolderCount, newFragment.placeHolders]);
+        Database.loadedFragments.set(fragment.label, fragment);
+        Database.database.run("INSERT INTO fragments VALUES (?,?,?,?,?,?,?,?)", [fragment.label, fragment.prefix, fragment.scope, fragment.body, fragment.description, fragment.keywords, fragment.domain, fragment.placeholders]);
         Database.persist();
         return true;
     }
 
-    static deleteFragment (label: string) : boolean {
+    static deleteFragment (label: string) : boolean
+    {
         if (Database.loadedFragments.has(label)) {
             Database.loadedFragments.delete(label);
             Database.database.run("DELETE FROM fragments WHERE label=?", [label]);
@@ -143,27 +150,30 @@ export class Database {
         return false;
     }
 
-    static updateFragment (label: string, options: any): boolean {
+    static updateFragment (label: string, obj:{keywords?: string, prefix?: string, body?: string, scope?: string, domain?: string, placeholders?: string[], description?: string}): boolean
+    {
         const oldFragment = Database.loadedFragments.get(label);
-        if (oldFragment === undefined) {
+        if (oldFragment === undefined)
+        {
             return false;
         }
 
-        var options = options || {};
-
-        const newFragment = new Fragment(
-            label, 
-            options.information || oldFragment.information, 
-            options.keywords || oldFragment.keywords, 
-            options.code || oldFragment.code,
-            options.language || oldFragment.language,
-            options.domain || oldFragment.domain,                  
-            options.placeHolders || oldFragment.placeHolders
-        );
+        const newFragment = new Fragment(label, obj);
 
         Database.loadedFragments.set(label, newFragment);
-        Database.database.run("UPDATE fragments SET information=? , keywords=?, code=?, language=?, domain=?, placeholdercount=?, placeholders=? WHERE label=?", [newFragment.information, newFragment.keywords, newFragment.code, newFragment.language, newFragment.domain, newFragment.placeHolderCount, newFragment.placeHolders, newFragment.label]);
+        Database.database.run("UPDATE fragments SET prefix=? , scope=?, body=?, description=?, keywords=?, domain=?, placeholders=? WHERE label=?", [newFragment.prefix, newFragment.scope, newFragment.body, newFragment.description, newFragment.keywords, newFragment.domain, newFragment.placeholders, newFragment.label]);
         Database.persist();
         return true;
+    }
+
+    private static createSnippet(): JSON
+    {
+        var snippet = "";
+        return JSON.parse(snippet);
+    }
+
+    private static extractSnippet(): {prefix?: string, body?: string, scope?: string, domain?: string, description?: string}
+    {
+        return {};
     }
 }

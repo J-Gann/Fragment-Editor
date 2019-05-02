@@ -72,23 +72,24 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
             text = "";
         }
 
-        input.then((value) =>
+        input.then((label) =>
         {
-            if(value === "")
+            if(label === "")
             {
                 vscode.window.showErrorMessage("Fragment Not Added (no empty label allowed)");
             }
-            else if(value === undefined)
+            else if(label === undefined)
             {
                 vscode.window.showErrorMessage("Fragment Not Added");
             }
-            else if(Database.getFragment(value))
+            else if(Database.getFragment(label))
             {
                 vscode.window.showErrorMessage("Fragment Not Added (label has to be unique)");
             }
             else
             {
-                Database.addFragment(value, {code:text});
+                var newFragment = new Fragment(label, {body:text});
+                Database.addFragment(newFragment);
                 vscode.window.showInformationMessage("Fragment Added");
             }
             this.refresh();

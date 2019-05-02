@@ -13,7 +13,8 @@ export class FragmentEditor {
         this.fragmentProvider = fragmentProvider;
     }
 
-    createPanel() {
+    createPanel()
+    {
         this.panel = vscode.window.createWebviewPanel(
             "",
             "",
@@ -23,41 +24,38 @@ export class FragmentEditor {
             }
         );
 
-        this.panel.onDidDispose(() => {
+        this.panel.onDidDispose(() =>
+        {
             this.panel = undefined;
-          }
-        );
+        });
 
         this.panel.webview.onDidReceiveMessage(
-            (message: any) => {
-                switch (message.command) {
+            (message: any) =>
+            {
+                switch (message.command)
+                {
                     case 'cancel':
                         this.panel.dispose();
                         this.panel.onDidDispose();
                         return;
                     case 'submit':
-                        const updated: boolean = Database.updateFragment(message.text.label, {
-                            information: message.text.information, 
-                            keywords: message.text.keywords, 
-                            code: message.text.code,
-                            language: message.text.language,
-                            domain: message.text.domain,
-                            placeHolders: message.text.placeHolders
-                        });
-                        vscode.window.showInformationMessage(updated ? "Fragment edited.": "Fragment not edited.");
+                        const updated: boolean = Database.updateFragment(message.text.label, {prefix: message.text.prefix, scope: message.text.scope, body: message.text.body, description: message.text.description, keywords: message.text.keywords, domain: message.text.domain, placeholders: message.text.placeholders});
+                        vscode.window.showInformationMessage(updated? "Fragment edited.": "Fragment not edited.");
                         this.fragmentProvider.refresh();
                         this.panel.dispose();
                         this.panel.onDidDispose();
                         return;
-              }
+                }
             },
             undefined,
             this.context.subscriptions
           );
     }
 
-    showFragment(fragment: Fragment) {
-        if (this.panel === undefined) {
+    showFragment(fragment: Fragment)
+    {
+        if (this.panel === undefined)
+        {
             this.createPanel();
         }
         
@@ -101,14 +99,13 @@ export class FragmentEditor {
                   <button style="float: right; margin: 10px; margin-top: 35px" onclick="cancelFunction()" class="btn waves-effect waves-light" type="submit" name="action">Cancel</button>
                   <button style="float: right; margin: 10px; margin-top: 35px" onclick="submitFunction()" class="btn waves-effect waves-light" type="submit" name="action">Save</button>
                   <br><br><br><br><br>
-                  Information: <input id="information" type="text" value="${fragment.information}">
+                  Description: <input id="description" type="text" value="${fragment.description}">
                   Keywords: <input id="keywords" type="text" value="${fragment.keywords}">
-                  Code: <textarea id="code" rows="16">${fragment.code}</textarea>
-                  Codelength:<input style="color:lightgrey;" id="codelength" type="text" value="${fragment.length}" disabled>
-                  Language: <input id="language" type="text" value="${fragment.language}">
+                  Prefix: <input id="prefix" type="text" value="${fragment.prefix}">
+                  Body: <textarea id="body" rows="16">${fragment.body}</textarea>
+                  Scope: <input id="scope" type="text" value="${fragment.scope}">
                   Domain: <input id="domain" type="text" value="${fragment.domain}">
-                  Placeholders: <input id="placeholders" type="text" value="${fragment.placeHolders}">
-                  Placeholdercount: <input style="color:lightgrey;" id="placeholdercount" type="number" value="${fragment.placeHolderCount}" disabled>
+                  Placeholders: <input id="placeholders" type="text" value="${fragment.placeholders}">
       
       
               <script>
@@ -116,12 +113,13 @@ export class FragmentEditor {
                   function submitFunction() {
                       vscode.postMessage({command: 'submit', text: {
                           "label":  document.getElementById("label").innerHTML ,
-                          "information": document.getElementById("information").value, 
-                          "keywords": document.getElementById("keywords").value, 
-                          "code": document.getElementById("code").value,
-                          "language": document.getElementById("language").value,
+                          "description": document.getElementById("description").value, 
+                          "keywords": document.getElementById("keywords").value,
+                          "prefix": document.getElementById("prefix").value, 
+                          "body": document.getElementById("body").value,
+                          "scope": document.getElementById("scope").value,
                           "domain": document.getElementById("domain").value,
-                          "placeHolders": document.getElementById("placeholders").value
+                          "placeholders": document.getElementById("placeholders").value
                       }});
                       
                   }

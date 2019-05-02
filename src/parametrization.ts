@@ -100,7 +100,11 @@ export class FOEF
             {
                 var fragment = entrie[0];
                 var count = entrie[1];
-                var keywords: string[] = fragment.keywords.split(',');
+                var keywords: string[] = [];
+                if(fragment.keywords !== undefined)
+                {
+                    keywords = fragment.keywords.split(',');
+                }
 
                 // Substract one for each keyword the line does not have but the fragment has
                 keywords.forEach((keyword: string) =>
@@ -171,7 +175,7 @@ export class FOEF
                         break;
                     }
                 }
-                newCode += whitespace + fragmentArray[cnt].code + '\n';
+                newCode += whitespace + fragmentArray[cnt].body + '\n';
             }
         }
         return newCode;
