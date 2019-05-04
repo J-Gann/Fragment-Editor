@@ -38,7 +38,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
      */
     refresh(): void
     {
-		this._onDidChangeTreeData.fire();
+        this._onDidChangeTreeData.fire();
 	}
 
     /**
@@ -88,7 +88,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
             }
             else
             {
-                var newFragment = new Fragment(label, {body:text});
+                var newFragment = new Fragment({label: label, body:text});
                 Database.addFragment(newFragment);
                 vscode.window.showInformationMessage("Fragment Added");
             }

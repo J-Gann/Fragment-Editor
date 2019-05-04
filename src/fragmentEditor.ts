@@ -39,7 +39,8 @@ export class FragmentEditor {
                         this.panel.onDidDispose();
                         return;
                     case 'submit':
-                        const updated: boolean = Database.updateFragment(message.text.label, {prefix: message.text.prefix, scope: message.text.scope, body: message.text.body, description: message.text.description, keywords: message.text.keywords, domain: message.text.domain, placeholders: message.text.placeholders});
+                        var newFragment = new Fragment({label: message.text.label, prefix: message.text.prefix, scope: message.text.scope, body: message.text.body, description: message.text.description, keywords: message.text.keywords, domain: message.text.domain, placeholders: message.text.placeholders});
+                        const updated: boolean = Database.updateFragment(newFragment);
                         vscode.window.showInformationMessage(updated? "Fragment edited.": "Fragment not edited.");
                         this.fragmentProvider.refresh();
                         this.panel.dispose();

@@ -28,7 +28,7 @@ export class Database {
 
         const filebuffer = fs.readFileSync(Database.fragmentDir + '/fragments.database');
         Database.database = new sql.Database(filebuffer);
-        Database.database.run("CREATE TABLE IF NOT EXISTS fragments (label char PRIMARY KEY,prefix char,scope char,body char,description char,keywords char,domain char,placeholders char);");
+        Database.database.run("CREATE TABLE IF NOT EXISTS fragments (label char PRIMARY KEY,prefix char,scope char,body char,description char,keywords char,domain char,placeholders char,snippet char);");
         Database.persist();
     }
 
@@ -47,9 +47,7 @@ export class Database {
             var keywords = element[5];
             var domain = element[6];
             var placeholders = element[7];
-
-            var newFragment = new Fragment(label, {prefix: prefix, scope: scope, body: body, description: description, keywords: keywords, domain: domain, placeholders: placeholders});
-
+            var newFragment = new Fragment({label: label, prefix: prefix, scope: scope, body: body, description: description, keywords: keywords, domain: domain, placeholders: placeholders});
             Database.loadedFragments.set(label, newFragment);
         });
     }
@@ -134,7 +132,7 @@ export class Database {
             return false;
         }
         Database.loadedFragments.set(fragment.label, fragment);
-        Database.database.run("INSERT INTO fragments VALUES (?,?,?,?,?,?,?,?)", [fragment.label, fragment.prefix, fragment.scope, fragment.body, fragment.description, fragment.keywords, fragment.domain, fragment.placeholders]);
+        Database.database.run("INSERT INTO fragments VALUES (?,?,?,?,?,?,?,?,?)", [fragment.label, fragment.prefix, fragment.scope, fragment.body, fragment.description, fragment.keywords, fragment.domain, fragment.placeholders,fragment.snippet]);
         Database.persist();
         return true;
     }
@@ -150,30 +148,17 @@ export class Database {
         return false;
     }
 
-    static updateFragment (label: string, obj:{keywords?: string, prefix?: string, body?: string, scope?: string, domain?: string, placeholders?: string[], description?: string}): boolean
+    static updateFragment(fragment: Fragment): boolean
     {
-        const oldFragment = Database.loadedFragments.get(label);
+        const oldFragment = Database.loadedFragments.get(fragment.label);
         if (oldFragment === undefined)
         {
             return false;
         }
 
-        const newFragment = new Fragment(label, obj);
-
-        Database.loadedFragments.set(label, newFragment);
-        Database.database.run("UPDATE fragments SET prefix=? , scope=?, body=?, description=?, keywords=?, domain=?, placeholders=? WHERE label=?", [newFragment.prefix, newFragment.scope, newFragment.body, newFragment.description, newFragment.keywords, newFragment.domain, newFragment.placeholders, newFragment.label]);
+        Database.loadedFragments.set(fragment.label, fragment);
+        Database.database.run("UPDATE fragments SET prefix=? , scope=?, body=?, description=?, keywords=?, domain=?, placeholders=? WHERE label=?", [fragment.prefix, fragment.scope, fragment.body, fragment.description, fragment.keywords, fragment.domain, fragment.placeholders, fragment.label]);
         Database.persist();
         return true;
-    }
-
-    private static createSnippet(): JSON
-    {
-        var snippet = "";
-        return JSON.parse(snippet);
-    }
-
-    private static extractSnippet(): {prefix?: string, body?: string, scope?: string, domain?: string, description?: string}
-    {
-        return {};
     }
 }
