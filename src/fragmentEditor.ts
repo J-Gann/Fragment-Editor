@@ -2,6 +2,7 @@ import { Fragment } from "./fragment";
 import * as vscode from 'vscode';
 import { Database } from "./database";
 import { FragmentProvider } from "./fragmentProvider";
+import { FOEF } from "./parametrization";
 
 export class FragmentEditor {
     panel: any;
@@ -45,6 +46,9 @@ export class FragmentEditor {
                         this.fragmentProvider.refresh();
                         this.panel.dispose();
                         this.panel.onDidDispose();
+                        return;
+                    case 'parametrize':
+                        this.panel.postMessage({command: 'parametrize', text: FOEF.parametrize(message.text)});
                         return;
                 }
             },
@@ -104,6 +108,8 @@ export class FragmentEditor {
                   Keywords: <input id="keywords" type="text" value="${fragment.keywords}">
                   Prefix: <input id="prefix" type="text" value="${fragment.prefix}">
                   Body: <textarea id="body" rows="16">${fragment.body}</textarea>
+                  <button style="float: right; margin: 10px; margin-top: 5px" onclick="parametrize()" class="btn waves-effect waves-light" type="submit" name="action">Parametrize</button>
+                  <br><br><br>
                   Scope: <input id="scope" type="text" value="${fragment.scope}">
                   Domain: <input id="domain" type="text" value="${fragment.domain}">
                   Placeholders: <input id="placeholders" type="text" value="${fragment.placeholders}">
@@ -121,12 +127,26 @@ export class FragmentEditor {
                           "scope": document.getElementById("scope").value,
                           "domain": document.getElementById("domain").value,
                           "placeholders": document.getElementById("placeholders").value
-                      }});
-                      
+                      }});    
                   }
                   function cancelFunction() {
                       vscode.postMessage({command: 'cancel', text: ''});
                   }
+
+                  function parametrize()
+                  {
+                      vscode.postMessage({command: 'parametrize', text: document.getElementById("body").value});
+                  }
+
+                  window.addEventListener('message', event =>
+                  {
+                      const message = event.data;
+                      switch(message.command)
+                      {
+                          case 'parametrize':
+                            document.getElementById("body").value = message.text;
+                      }
+                  });
               </script>
           </body>
           </html>`;
