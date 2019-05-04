@@ -144,4 +144,9 @@ export class Fragment extends vscode.TreeItem {
         return this._snippet;
     }
 
+
+    set label(label: string)
+    {
+        this._label = label;
+    }
 }

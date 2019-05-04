@@ -1,6 +1,7 @@
 import { Fragment } from "./fragment";
 import sql = require('sql.js');
 import fs = require("fs");
+import { print } from "util";
 
 export class Database {
     private static database: any;
@@ -63,7 +64,8 @@ export class Database {
     }
 
     static getFilteredFragments(filter: string): Fragment[] {
-        if (filter === "") {
+        if(filter === "")
+        {
             return Array.from(Database.loadedFragments.values());
         }
 
@@ -85,7 +87,7 @@ export class Database {
                 {
                     if(fragment.scope !== undefined)
                     {
-                        fragment.scope.toLowerCase().includes(filterElement.toLowerCase());
+                        return fragment.scope.toLowerCase().includes(filterElement.toLowerCase());
                     }
                 });   
             }
@@ -96,7 +98,7 @@ export class Database {
                     {
                         if(fragment.domain !== undefined)
                         {
-                            fragment.domain.toLowerCase().includes(filterElement.toLowerCase());
+                            return fragment.domain.toLowerCase().includes(filterElement.toLowerCase());
                         }
                     });      
             }
@@ -107,9 +109,9 @@ export class Database {
                     {
                         if(fragment.keywords !== undefined)
                         {
-                            fragment.keywords.includes(filterElement);
+                            return fragment.keywords.includes(filterElement);
                         }
-                    });   
+                    });
             }
         });
         return fragmentList;

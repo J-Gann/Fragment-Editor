@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { Fragment } from "./fragment";
 import { Database } from './database';
 import { FragmentEditor } from './fragmentEditor';
+import { FOEF } from './parametrization';
 
 /**
  * Provides fragments that should be displayed in a tree view
@@ -88,6 +89,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
             }
             else
             {
+                text = FOEF.parametrize(text);
                 var newFragment = new Fragment({label: label, body:text});
                 Database.addFragment(newFragment);
                 vscode.window.showInformationMessage("Fragment Added");
