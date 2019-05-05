@@ -108,7 +108,7 @@ export class FragmentEditor {
                   Keywords: <input id="keywords" type="text" value="${fragment.keywords}">
                   Prefix: <input id="prefix" type="text" value="${fragment.prefix}">
                   Body: <textarea id="body" rows="16">${fragment.body}</textarea>
-                  <button style="float: right; margin: 10px; margin-top: 5px" onclick="parametrize()" class="btn waves-effect waves-light" type="submit" name="action">Parametrize</button>
+                  <button title="Replaces Keywords, Body and Placeholders" style="float: right; margin: 10px; margin-top: 5px" onclick="parametrize()" class="btn waves-effect waves-light" type="submit" name="action">Parametrize</button>
                   <br><br><br>
                   Scope: <input id="scope" type="text" value="${fragment.scope}">
                   Domain: <input id="domain" type="text" value="${fragment.domain}">
@@ -144,7 +144,9 @@ export class FragmentEditor {
                       switch(message.command)
                       {
                           case 'parametrize':
-                            document.getElementById("body").value = message.text;
+                            document.getElementById("body").value = message.text.body;
+                            document.getElementById("keywords").value = message.text.keywords;
+                            document.getElementById("placeholders").value = message.text.placeholders;     
                       }
                   });
               </script>

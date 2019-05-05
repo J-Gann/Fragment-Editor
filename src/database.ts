@@ -1,4 +1,5 @@
 import { Fragment } from "./fragment";
+import * as vscode from 'vscode';
 import sql = require('sql.js');
 import fs = require("fs");
 import { print } from "util";
@@ -8,8 +9,8 @@ export class Database {
     private static fragmentDir: string;
     private static loadedFragments: Map<string, Fragment>;
 
-    constructor() {
-        Database.fragmentDir = require('os').homedir() + "/fragments";
+    constructor(path: string) {
+        Database.fragmentDir = path;
         Database.createDatabase();
         Database.loadedFragments = new Map();
         Database.loadFragments();

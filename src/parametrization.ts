@@ -11,7 +11,7 @@ export class FOEF
      * Calculate a parametrized snippet of the code and return it
      * @param code Code to parametrize
      */
-    static parametrize(code: string): string
+    static parametrize(code: string): {body: string, keywords: string, placeholders: string}
     {
         // 1) Split code in array of lines
         var codeLines = code.split("\n");
@@ -192,6 +192,86 @@ export class FOEF
                 }
             }
         }
-        return newCode;
+
+        // Adapt placeholder in body so that their number is incrementing also over different lines
+        var placeholderCnt = 1;
+        var _newCode = "";
+        for(var cnt = 0; cnt < newCode.length; cnt++)
+        {
+            var ch1 = newCode.charAt(cnt);
+            var ch2 = newCode.charAt(cnt+1);
+            if(ch1 === '$' && ch2 === '{')
+            {
+                _newCode += "${" + placeholderCnt;
+                cnt += 2;
+                placeholderCnt++;
+            }
+            else
+            {
+                _newCode += ch1;
+            }
+        }
+
+        // Create new list of placeholders
+        var newPlaceholders: string = "";
+
+        for(var cnt = 0; cnt < fragmentArray.length; cnt++)
+        {
+            if(fragmentArray[cnt] !== undefined)
+            {
+                if(fragmentArray[cnt].placeholders !== undefined)
+                {
+                    if(cnt !== fragmentArray.length - 1)
+                    {
+                        newPlaceholders += fragmentArray[cnt].placeholders + ',';
+                    }
+                    else
+                    {
+                        newPlaceholders += fragmentArray[cnt].placeholders;
+                    }
+                }
+            }
+        }
+
+        // Adapt placeholders in list of placeholders so that their number is incrementing
+        var _newPlaceholders: string = "";
+        placeholderCnt = 1;
+        for(var cnt = 0; cnt < newPlaceholders.length; cnt++)
+        {
+            var ch1 = newPlaceholders.charAt(cnt);
+            var ch2 = newPlaceholders.charAt(cnt+1);
+            if(ch1 === '$' && ch2 === '{')
+            {
+                _newPlaceholders += "${" + placeholderCnt;
+                cnt += 2;
+                placeholderCnt++;
+            }
+            else
+            {
+                _newPlaceholders += ch1;
+            }
+        }
+
+        // Create new list of keywords
+        var newKeywords: string = "";
+
+        for(cnt = 0; cnt < fragmentArray.length; cnt++)
+        {
+            if(fragmentArray[cnt] !== undefined)
+            {
+                if(fragmentArray[cnt].keywords !== undefined)
+                {
+                    if(cnt !== fragmentArray.length - 1)
+                    {
+                        newKeywords += fragmentArray[cnt].keywords + ',';
+                    }
+                    else
+                    {
+                        newKeywords += fragmentArray[cnt].keywords;
+                    }
+                }
+            }
+        }
+        return {body: _newCode, keywords: newKeywords, placeholders: _newPlaceholders};
     }
 }

@@ -89,8 +89,8 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
             }
             else
             {
-                text = FOEF.parametrize(text);
-                var newFragment = new Fragment({label: label, body:text});
+                var obj = FOEF.parametrize(text);
+                var newFragment = new Fragment({...{label: label}, ...obj});
                 Database.addFragment(newFragment);
                 vscode.window.showInformationMessage("Fragment Added");
             }

@@ -5,9 +5,8 @@ import { Fragment } from "./fragment";
 import { FragmentProvider } from './fragmentProvider';
 import { Database } from './database';
 
-var database = new Database();
-
 export function activate(context: vscode.ExtensionContext) {
+	var database = new Database(context.extensionPath + "/data");
 	const fragmentProvider = new FragmentProvider(context);
 	vscode.window.registerTreeDataProvider('fragmentEditor', fragmentProvider);
 	vscode.commands.registerCommand('fragmentEditor.addEntry', () => fragmentProvider.addEntry());
