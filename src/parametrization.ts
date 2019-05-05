@@ -221,14 +221,7 @@ export class FOEF
             {
                 if(fragmentArray[cnt].placeholders !== undefined)
                 {
-                    if(cnt !== fragmentArray.length - 1)
-                    {
-                        newPlaceholders += fragmentArray[cnt].placeholders + ',';
-                    }
-                    else
-                    {
-                        newPlaceholders += fragmentArray[cnt].placeholders;
-                    }
+                    newPlaceholders += fragmentArray[cnt].placeholders + ',';
                 }
             }
         }
@@ -252,6 +245,8 @@ export class FOEF
             }
         }
 
+        _newPlaceholders = _newPlaceholders.substr(0, _newPlaceholders.length - 1);
+
         // Create new list of keywords
         var newKeywords: string = "";
 
@@ -261,17 +256,12 @@ export class FOEF
             {
                 if(fragmentArray[cnt].keywords !== undefined)
                 {
-                    if(cnt !== fragmentArray.length - 1)
-                    {
-                        newKeywords += fragmentArray[cnt].keywords + ',';
-                    }
-                    else
-                    {
-                        newKeywords += fragmentArray[cnt].keywords;
-                    }
+                    newKeywords += fragmentArray[cnt].keywords + ',';
                 }
             }
         }
+        newKeywords = newKeywords.substr(0, newKeywords.length - 1);
+
         return {body: _newCode, keywords: newKeywords, placeholders: _newPlaceholders};
     }
 }
