@@ -153,7 +153,14 @@ export class FOEF
         {
             if(fragmentArray[cnt] === undefined)
             {
-                newCode += codeLines[cnt] + '\n';
+                if(cnt !== fragmentArray.length - 1)
+                {
+                    newCode += codeLines[cnt] + '\n';
+                }
+                else
+                {
+                    newCode += codeLines[cnt];
+                }
             }
             else
             {
@@ -175,7 +182,14 @@ export class FOEF
                         break;
                     }
                 }
-                newCode += whitespace + fragmentArray[cnt].body + '\n';
+                if(cnt !== fragmentArray.length - 1)
+                {
+                    newCode += whitespace + fragmentArray[cnt].body + '\n';
+                }
+                else
+                {
+                    newCode += whitespace + fragmentArray[cnt].body;
+                }
             }
         }
         return newCode;
