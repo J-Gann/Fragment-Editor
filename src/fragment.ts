@@ -83,6 +83,28 @@ export class Fragment extends vscode.TreeItem {
         this.command = {command: "fragmentEditor.editEntry", title: "Edit Node", arguments: [this]};
     }
 
+    get tooltip(): string
+    {
+        var text: string = this._label + '\n';
+        for(var cnt = 0; cnt < this._label.length; cnt++)
+        {
+            text += '~';
+        }
+        text += '\n' + this._keywords + '\n';
+        if(this._keywords !== undefined)
+        {
+            for(var cnt = 0; cnt < this._keywords.length; cnt++)
+            {
+                text += '~';
+            }
+        }
+        if(this._body !== undefined)
+        {
+            text += '\n' + this._body + '\n';
+        }
+        return text;
+    }
+
     private static createSnippet(fragment: Fragment): string
     {
         var object = {label: fragment.label, prefix: fragment.prefix, scope: fragment.scope, body: fragment.body, description: fragment.description};
