@@ -67,8 +67,7 @@
 			}
 		],
 		"menus": {
-			"editor/context":
-			[
+			"editor/context": [
 				{
 					"command": "fragmentEditor.addEntry",
 					"group": "9_cutcopypaste",

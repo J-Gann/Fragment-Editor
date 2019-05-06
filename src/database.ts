@@ -1,104 +1,78 @@
 import { Fragment } from "./fragment";
 import * as vscode from 'vscode';
-
 import sql = require('sql.js');
 import fs = require("fs");
-import path = require("path");
+import { print } from "util";
 
 export class Database {
-    db: any;
-    fragmentDir: string;
+    private static database: any;
+    private static fragmentDir: string;
+    private static loadedFragments: Map<string, Fragment>;
 
-    fragments: Map<string, Fragment>;
-
-    constructor() {
-        this.fragmentDir = require('os').homedir() + "/fragments";
-        this.createDatabase();
-
-        this.fragments = new Map();
-        this.loadFragments();
+    constructor(path: string) {
+        Database.fragmentDir = path;
+        Database.createDatabase();
+        Database.loadedFragments = new Map();
+        Database.loadFragments();
     }
 
-    createDatabase(): void {
-        if (!fs.existsSync(this.fragmentDir)) {
-            fs.mkdirSync(this.fragmentDir);
+    static createDatabase(): void {
+        if (!fs.existsSync(Database.fragmentDir)) {
+            fs.mkdirSync(Database.fragmentDir);
         }
 
-        if (!fs.existsSync(this.fragmentDir + "/fragments.db")) {
+        if (!fs.existsSync(Database.fragmentDir + "/fragments.database")) {
             const bufferdatabase = new sql.Database();
             const data = bufferdatabase.export();
             const buffer = Buffer.from(data);
-            fs.writeFileSync(this.fragmentDir + '/fragments.db', buffer);
+            fs.writeFileSync(Database.fragmentDir + '/fragments.database', buffer);
         }
 
-        const filebuffer = fs.readFileSync(this.fragmentDir + '/fragments.db');
-        this.db = new sql.Database(filebuffer);
-        this.db.run("CREATE TABLE IF NOT EXISTS fragments (label char PRIMARY KEY,information char NOT NULL,keywords char NOT NULL,code char NOT NULL,language char NOT NULL,domain char NOT NULL,placeholdercount int(11) NOT NULL,placeholders char NOT NULL);");
-        this.persist();
+        const filebuffer = fs.readFileSync(Database.fragmentDir + '/fragments.database');
+        Database.database = new sql.Database(filebuffer);
+        Database.database.run("CREATE TABLE IF NOT EXISTS fragments (label char PRIMARY KEY,prefix char,scope char,body char,description char,keywords char,domain char,placeholders char,snippet char);");
+        Database.persist();
     }
 
-    loadFragments(): void {
-        const res = this.db.exec("SELECT * FROM fragments")[0];
+    private static loadFragments(): void {
+        const res = Database.database.exec("SELECT * FROM fragments")[0];
         if (res === undefined) {
             return;
         }
 
         res.values.forEach((element: any[]) => {
-            this.fragments.set(element[0], new Fragment(element[0], 
-                element[1], 
-                element[2], 
-                element[3],
-                element[4],
-                element[5],                  
-                element[7]
-            ));
+            var label = element[0];
+            var prefix = element[1];
+            var scope = element[2];
+            var body = element[3];
+            var description = element[4];
+            var keywords = element[5];
+            var domain = element[6];
+            var placeholders = element[7];
+            var newFragment = new Fragment({label: label, prefix: prefix, scope: scope, body: body, description: description, keywords: keywords, domain: domain, placeholders: placeholders});
+            Database.loadedFragments.set(label, newFragment);
         });
     }
 
-    persist(): void {
-        const data = this.db.export();
+    private static persist(): void {
+        const data = Database.database.export();
         const buffer = Buffer.from(data);
-        fs.writeFileSync(this.fragmentDir + '/fragments.db', buffer);
+        fs.writeFileSync(Database.fragmentDir + '/fragments.database', buffer);
     }
 
-    getFragments(): Fragment[] {
-        return Array.from(this.fragments.values());
+    static getFragments(): Fragment[] {
+        return Array.from(Database.loadedFragments.values());
     }
 
-    getExistingLanguages(): string[]
-    {
-        var languages: string[] = [];
-        this.fragments.forEach(element => {
-            var language = element.language;
-            if(!languages.includes(language))
-            {
-                languages.push(language);
-            }
-        });
-        return languages;
-    }
-
-    getExistingDomains(): string[]
-    {
-        var domains: string[] = [];
-        this.fragments.forEach(element => {
-            var domain = element.domain;
-            if(!domains.includes(domain))
-            {
-                domains.push(domain);
-            }
-        });
-        return domains;
-    }
-
-    getFilteredFragments(filter: string): Fragment[] {
-        if (filter === "") {
-            return Array.from(this.fragments.values());
+    static getFilteredFragments(filter: string): Fragment[] {
+        if(filter === "")
+        {
+            return Array.from(Database.loadedFragments.values());
         }
 
         var filterList = filter.split(",");
 
-        let fragmentList: Fragment[] = Array.from(this.fragments.values());
+        let fragmentList: Fragment[] = Array.from(Database.loadedFragments.values());
 
         filterList.forEach((filterElement: string) =>
         {
@@ -107,28 +81,46 @@ export class Database {
                 filterElement = filterElement.split(":")[1];
                 fragmentList = fragmentList.filter(fragment => fragment.label.toLowerCase().includes(filterElement.toLowerCase()));
             }
-            if(filterElement.includes("language:") && filterElement.indexOf("language:") === 0)     // Filtern nach Fragmenten, die die gesuchte Sprache als Substring haben
+            if(filterElement.includes("scope:") && filterElement.indexOf("scope:") === 0)     // Filtern nach Fragmenten, die die gesuchte Sprache als Substring haben
             {
                 filterElement = filterElement.split(":")[1];
-                fragmentList = fragmentList.filter(fragment => fragment.language.toLowerCase().includes(filterElement.toLowerCase()));    
+                fragmentList = fragmentList.filter(fragment =>
+                {
+                    if(fragment.scope !== undefined)
+                    {
+                        return fragment.scope.toLowerCase().includes(filterElement.toLowerCase());
+                    }
+                });   
             }
             if(filterElement.includes("domain:") && filterElement.indexOf("domain:") === 0)     // Filtern nach Fragmenten, die die gesuchte Domäne als Substring haben
             {
                 filterElement = filterElement.split(":")[1];
-                fragmentList = fragmentList.filter(fragment => fragment.domain.toLowerCase().includes(filterElement.toLowerCase()));    
+                fragmentList = fragmentList.filter(fragment =>
+                    {
+                        if(fragment.domain !== undefined)
+                        {
+                            return fragment.domain.toLowerCase().includes(filterElement.toLowerCase());
+                        }
+                    });      
             }
             if(filterElement.includes("keyword:") && filterElement.indexOf("keyword:") === 0)   // Filtern nach Fragmenten, die das exakte gesuchte Keyword besitzen
             {
                 filterElement = filterElement.split(":")[1];
-                fragmentList = fragmentList.filter(fragment => fragment.keywords.split(",").includes(filterElement));
+                fragmentList = fragmentList.filter(fragment =>
+                    {
+                        if(fragment.keywords !== undefined)
+                        {
+                            return fragment.keywords.includes(filterElement);
+                        }
+                    });
             }
         });
         return fragmentList;
-        //Original: return Array.from(this.fragments.values()).filter(fragment => fragment.label.toLowerCase().includes(filter.toLowerCase()));
     }
 
-    getFragment(label: string): any {
-        return this.fragments.get(label);
+    static getFragment(label: string): Fragment | undefined
+    {
+        return Database.loadedFragments.get(label);
     }
 
     /**
@@ -136,63 +128,40 @@ export class Database {
      * return false if fragment already exists
      */
 
-    addFragment(label: string, {
-        information = "", 
-        keywords = "", 
-        code = "",                                        
-        language = "", 
-        domain = "",
-        placeHolders = ""
-    }): boolean {
-        if (this.fragments.has(label)) {
+    static addFragment(fragment: Fragment)
+    {
+        if(Database.loadedFragments.has(fragment.label))
+        {
             return false;
         }
-        const newFragment = new Fragment(
-            label, 
-            information, 
-            keywords, 
-            code, 
-            language, 
-            domain, 
-            placeHolders
-        );
-        this.fragments.set(label, newFragment);
-        this.db.run("INSERT INTO fragments VALUES (?,?,?,?,?,?,?,?)", [newFragment.label, newFragment.information, newFragment.keywords, newFragment.code, newFragment.language, newFragment.domain, newFragment.placeHolderCount, newFragment.placeHolders]);
-        this.persist();
+        Database.loadedFragments.set(fragment.label, fragment);
+        Database.database.run("INSERT INTO fragments VALUES (?,?,?,?,?,?,?,?,?)", [fragment.label, fragment.prefix, fragment.scope, fragment.body, fragment.description, fragment.keywords, fragment.domain, fragment.placeholders,fragment.snippet]);
+        Database.persist();
         return true;
     }
 
-    deleteFragment (label: string) : boolean {
-        if (this.fragments.has(label)) {
-            this.fragments.delete(label);
-            this.db.run("DELETE FROM fragments WHERE label=?", [label]);
-            this.persist();
+    static deleteFragment (label: string) : boolean
+    {
+        if (Database.loadedFragments.has(label)) {
+            Database.loadedFragments.delete(label);
+            Database.database.run("DELETE FROM fragments WHERE label=?", [label]);
+            Database.persist();
             return true;
         }
         return false;
     }
 
-    updateFragment (label: string, options: any): boolean {
-        const oldFragment = this.fragments.get(label);
-        if (oldFragment === undefined) {
+    static updateFragment(fragment: Fragment): boolean
+    {
+        const oldFragment = Database.loadedFragments.get(fragment.label);
+        if (oldFragment === undefined)
+        {
             return false;
         }
 
-        var options = options || {};
-
-        const newFragment = new Fragment(
-            label, 
-            options.information || oldFragment.information, 
-            options.keywords || oldFragment.keywords, 
-            options.code || oldFragment.code,
-            options.language || oldFragment.language,
-            options.domain || oldFragment.domain,                  
-            options.placeHolders || oldFragment.placeHolders
-        );
-
-        this.fragments.set(label, newFragment);
-        this.db.run("UPDATE fragments SET information=? , keywords=?, code=?, language=?, domain=?, placeholdercount=?, placeholders=? WHERE label=?", [newFragment.information, newFragment.keywords, newFragment.code, newFragment.language, newFragment.domain, newFragment.placeHolderCount, newFragment.placeHolders, newFragment.label]);
-        this.persist();
+        Database.loadedFragments.set(fragment.label, fragment);
+        Database.database.run("UPDATE fragments SET prefix=? , scope=?, body=?, description=?, keywords=?, domain=?, placeholders=? WHERE label=?", [fragment.prefix, fragment.scope, fragment.body, fragment.description, fragment.keywords, fragment.domain, fragment.placeholders, fragment.label]);
+        Database.persist();
         return true;
     }
 }
