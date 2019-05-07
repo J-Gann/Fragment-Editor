@@ -3,25 +3,31 @@ import { Fragment } from "./fragment";
 import { Database } from './database';
 import { FragmentEditor } from './fragmentEditor';
 import { FOEF } from './parametrization';
+import { TreeItem } from './treeItem';
+import { FolderEditor } from './folderEditor';
 
 /**
  * Provides fragments that should be displayed in a tree view
  */
-export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
+export class FragmentProvider implements vscode.TreeDataProvider<TreeItem>
 {
     private fragmentListFilter: string;
     private fragmentEditor: FragmentEditor;
+    private folderEditor: FolderEditor;
+    private _treeView: vscode.TreeView<TreeItem> | undefined;
 
-	private _onDidChangeTreeData: vscode.EventEmitter<Fragment | undefined> = new vscode.EventEmitter<Fragment | undefined>();
-	readonly onDidChangeTreeData: vscode.Event<Fragment | undefined> = this._onDidChangeTreeData.event;
+	private _onDidChangeTreeData: vscode.EventEmitter<TreeItem | undefined> = new vscode.EventEmitter<TreeItem | undefined>();
+	readonly onDidChangeTreeData: vscode.Event<TreeItem | undefined> = this._onDidChangeTreeData.event;
 
     constructor(context: vscode.ExtensionContext)
     {
         this.fragmentListFilter = "";
         this.fragmentEditor = new FragmentEditor(context, this);
+        this.folderEditor = new FolderEditor(context, this);
+        this._treeView = undefined;
     }
 
-    getTreeItem(element: Fragment): vscode.TreeItem
+    getTreeItem(element: TreeItem): vscode.TreeItem
     {
         return element;
     }
@@ -29,9 +35,24 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
     /**
      * Return list of fragments that are displayed in the tree
      */
-    getChildren(element?: Fragment): Thenable<Fragment[]>
+    getChildren(element?: TreeItem): Thenable<TreeItem[]>
     {
-        return Promise.resolve(Database.getFilteredFragments(this.fragmentListFilter));
+        if(element !== undefined)
+        {
+            return Promise.resolve(element.treeItems);
+        }
+        else
+        {
+            var rootTreeItem = Database.getRootTreeItem();
+            if(rootTreeItem !== undefined)
+            {
+                return Promise.resolve(rootTreeItem.treeItems);
+            }
+            else
+            {
+                return Promise.resolve([]);
+            }
+        }
     }
 
     /**
@@ -46,21 +67,39 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
      * Changes the properties of a fragment
      * @param fragment Fragment that should be edited
      */
-    editEntry(fragment: Fragment): void
+    editFragment(treeItem: TreeItem): void
     {
-        this.fragmentEditor.showFragment(fragment);
+        if(treeItem.contextValue === "fragment")
+        {
+            if(treeItem.fragmentLabel !== undefined)
+            {
+                this.fragmentEditor.showFragment(Database.getFragment(treeItem.fragmentLabel));
+            }
+        }
+    }
+
+    editFolder(treeItem: TreeItem): void
+    {
+        if(treeItem.contextValue === "folder")
+        {
+            this.folderEditor.showFolder(treeItem);
+        }
     }
 
     /**
      * Creates a new fragment by opening a input dialog to enter a new label
      */
-    addEntry(): void
+    addFragment(): void
     {
-        var input = vscode.window.showInputBox({prompt: "Input a label for the Fragment"});
+        if(this._treeView !== undefined)
+        {
+            var treeViewSelections = this._treeView.selection;
+            var treeViewSelection = treeViewSelections[0];
+        }
         var editor = vscode.window.activeTextEditor;
         var selection: vscode.Selection;
         var textDocument: vscode.TextDocument;
-        var text: string;
+        var text: string = "";
 
         if(editor)
         {
@@ -68,11 +107,8 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
             textDocument = editor.document;
             text = textDocument.getText(new vscode.Range(selection.start, selection.end));
         }
-        else
-        {
-            text = "";
-        }
 
+        var input = vscode.window.showInputBox({prompt: "Input a label for the Fragment"});
         input.then((label) =>
         {
             if(label === "")
@@ -91,27 +127,98 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
             {
                 var obj = FOEF.parametrize(text);
                 var newFragment = new Fragment({...{label: label}, ...obj});
+                var newTreeItem = new TreeItem({label: label, contextValue: "fragment"})
                 Database.addFragment(newFragment);
+                Database.addTreeItem(newTreeItem);
+                if(treeViewSelection !== undefined)
+                {
+                    treeViewSelection.treeItems.push(newTreeItem);
+                }
+                else
+                {
+                    var rootTreeItem = Database.getRootTreeItem()
+                    if(rootTreeItem !== undefined)
+                    {
+                        rootTreeItem.treeItems.push(newTreeItem);
+                    }
+                }
                 vscode.window.showInformationMessage("Fragment Added");
+                this.editFragment(newTreeItem);
             }
             this.refresh();
         });
     }
 
     /**
-     * Deletes a fragment
+     * Creates a new folder by opening a input dialog to enter a new label
+     */
+    addFolder(): void
+    {
+        if(this._treeView !== undefined)
+        {
+            var treeViewSelections = this._treeView.selection;
+            var treeViewSelection = treeViewSelections[0];
+        }
+        var input = vscode.window.showInputBox({prompt: "Input a label for the Folder"});
+        input.then((label) =>
+        {
+            if(label === "")
+            {
+                vscode.window.showErrorMessage("Folder Not Added (no empty label allowed)");
+            }
+            else if(label === undefined)
+            {
+                vscode.window.showErrorMessage("Folder Not Added");
+            }
+            else if(Database.getFragment(label))
+            {
+                vscode.window.showErrorMessage("Folder Not Added (label has to be unique)");
+            }
+            else
+            {
+                var newTreeItem = new TreeItem({label: label, contextValue: "folder"})
+                Database.addTreeItem(newTreeItem);
+                if(treeViewSelection !== undefined)
+                {
+                    treeViewSelection.treeItems.push(newTreeItem);
+                }
+                else
+                {
+                    var rootTreeItem = Database.getRootTreeItem()
+                    if(rootTreeItem !== undefined)
+                    {
+                        rootTreeItem.treeItems.push(newTreeItem);
+                    }
+                }                vscode.window.showInformationMessage("Folder Added");
+                this.editFragment(newTreeItem);
+            }
+            this.refresh();
+        });
+    }
+
+    /**
+     * Deletes a TreeItem
      * @param fragment Fragment that should be deleted
      */
-    deleteEntry(fragment: Fragment): void
+    deleteEntry(treeItem: TreeItem): void
     {
-        if(Database.deleteFragment(fragment.label))
+        if(treeItem.contextValue === "folder")
         {
-            this.fragmentEditor.onDelete(fragment);
-            vscode.window.showInformationMessage("Fragment Deleted");
+            treeItem.treeItems.forEach((element) =>
+            {
+                this.deleteEntry(element);
+            });
+            if(treeItem.label !== undefined)
+            {
+                Database.deleteTreeItem(treeItem.label);
+            }
         }
         else
         {
-            vscode.window.showErrorMessage("Fragment Not Deleted");
+            if(treeItem.label !== undefined)
+            {
+                Database.deleteTreeItem(treeItem.label);
+            }
         }
         this.refresh();
     }
@@ -144,5 +251,10 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
     {
         this.fragmentListFilter = "";
         this.refresh();
+    }
+
+    set treeView(treeView: vscode.TreeView<TreeItem>)
+    {
+        this._treeView = treeView;
     }
 }

@@ -15,18 +15,7 @@
 	"main": "./out/extension.js",
 	"contributes": {
 		"keybindings": [
-			{
-				"command": "fragmentEditor.addEntry",
-				"key": "ctrl+shift+n"
-			},
-			{
-				"command": "fragmentEditor.reset",
-				"key": "ctrl+shift+r"
-			},
-			{
-				"command": "fragmentEditor.filter",
-				"key": "ctrl+shift+f"
-			}
+
 		],
 		"viewsContainers": {
 			"activitybar": [
@@ -47,9 +36,12 @@
 		},
 		"commands": [
 			{
-				"command": "fragmentEditor.addEntry",
-				"title": "Add Fragment From Selection",
-				"icon": "media/add.png"
+				"command": "fragmentEditor.addFolder",
+				"title": "+Folder"
+			},
+			{
+				"command": "fragmentEditor.addFragment",
+				"title": "+Fragment"
 			},
 			{
 				"command": "fragmentEditor.deleteEntry",
@@ -69,14 +61,18 @@
 		"menus": {
 			"editor/context": [
 				{
-					"command": "fragmentEditor.addEntry",
+					"command": "fragmentEditor.addFragment",
 					"group": "9_cutcopypaste",
 					"when": "editorHasSelection"
 				}
 			],
 			"view/title": [
 				{
-					"command": "fragmentEditor.addEntry",
+					"command": "fragmentEditor.addFolder",
+					"group": "navigation"
+				},
+				{
+					"command": "fragmentEditor.addFragment",
 					"group": "navigation"
 				},
 				{

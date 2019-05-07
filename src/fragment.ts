@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
-import { FOEF } from './parametrization';
+import { Database } from './database';
+
 export class Fragment extends vscode.TreeItem {
     // properties of the vscode snippet
     private _label: string;

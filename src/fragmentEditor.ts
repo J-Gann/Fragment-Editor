@@ -57,8 +57,12 @@ export class FragmentEditor {
           );
     }
 
-    showFragment(fragment: Fragment)
+    showFragment(fragment: Fragment | undefined)
     {
+        if(fragment === undefined)
+        {
+            return;
+        }
         if (this.panel === undefined)
         {
             this.createPanel();
