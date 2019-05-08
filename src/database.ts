@@ -231,6 +231,13 @@ export class Database {
         });
         console.log("##################");
 */
+/*
+        this._loadedFragments.forEach((treeItem: Fragment) =>
+        {
+            console.log(treeItem);
+        });
+        console.log("##################");
+*/
     }
 
     /**
