@@ -37,11 +37,13 @@
 		"commands": [
 			{
 				"command": "fragmentEditor.addFolder",
-				"title": "+Folder"
+				"title": "Add Folder",
+				"icon": "media/folder.png"
 			},
 			{
 				"command": "fragmentEditor.addFragment",
-				"title": "+Fragment"
+				"title": "Add Fragment",
+				"icon": "media/fragment.png"
 			},
 			{
 				"command": "fragmentEditor.deleteEntry",
