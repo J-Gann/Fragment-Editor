@@ -106,7 +106,7 @@ export class FolderEditor {
                 <button style="float: right; margin: 10px; margin-top: 35px" onclick="cancelFunction()" class="btn waves-effect waves-light" type="submit" name="action">Cancel</button>
                 <button style="float: right; margin: 10px; margin-top: 35px" onclick="submitFunction()" class="btn waves-effect waves-light" type="submit" name="action">Save</button>
                 <br><br><br><br><br>
-                Tree Items: <input id="treeItems" type="text" value="${treeItem.treeItems}">
+                Tree Items: <input id="treeItems" type="text" value="${treeItem.childs}">
 
             <script>
                 const vscode = acquireVsCodeApi();

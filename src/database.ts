@@ -2,6 +2,7 @@ import { Fragment } from "./fragment";
 import sql = require('sql.js');
 import fs = require("fs");
 import { TreeItem } from "./treeItem";
+import * as vscode from 'vscode';
 
 export class Database {
     private static _fragmentDatabase: any;
@@ -20,20 +21,12 @@ export class Database {
         Database.loadFragments();
         Database._loadedTreeItems = new Map();
 
-        var fragment = new Fragment({label: "testFragment"});
-        Database._loadedFragments.set(fragment.label, fragment);
-
-        var test2 = new TreeItem({label: "FragmentName", contextValue: "fragment"})
-        test2.fragmentLabel = fragment.label;
-        Database._loadedTreeItems.set("FragmentName", test2);
-        
-        var test1 = new TreeItem({label: "FolderName1", contextValue: "folder"})
-        test1.treeItems = [test2];
-        Database._loadedTreeItems.set("FolderName1", test1);
-
         var test0 = new TreeItem({label: "Root", isRoot: true, contextValue: "folder"})
-        test0.treeItems = [test1];
         Database._loadedTreeItems.set("Root", test0);
+
+
+
+
 
     }
 
@@ -56,26 +49,6 @@ export class Database {
         Database._fragmentDatabase.run("CREATE TABLE IF NOT EXISTS fragments (label char PRIMARY KEY,prefix char,scope char,body char,description char,keywords char,domain char,placeholders char,snippet char);");
         Database.persist();
     }
-    
-    static createTreeItemDatabase(): void
-    {
-        if(!fs.existsSync(Database._treeItemDirectory))
-        {
-            fs.mkdirSync(Database._treeItemDirectory);
-        }
-
-        if (!fs.existsSync(Database._treeItemDirectory + "/fragments.treeItemDatabase")) {
-            const buffertreeItemDatabase = new sql.Database();
-            const data = buffertreeItemDatabase.export();
-            const buffer = Buffer.from(data);
-            fs.writeFileSync(Database._treeItemDirectory + '/fragments.treeItemDatabase', buffer);
-        }
-
-        const filebuffer = fs.readFileSync(Database._treeItemDirectory + '/fragments.treeItemDatabase');
-        Database._treeItemDatabase = new sql.Database(filebuffer);
-        Database._treeItemDatabase.run("CREATE TABLE IF NOT EXISTS treeItems (label char PRIMARY KEY,isRoot char,treeItems char,fragmentLabel char);");
-        Database.persist();
-    }
 
     private static loadFragments(): void
     {
@@ -96,32 +69,6 @@ export class Database {
             var placeholders = element[7];
             var newFragment = new Fragment({label: label, prefix: prefix, scope: scope, body: body, description: description, keywords: keywords, domain: domain, placeholders: placeholders});
             Database._loadedFragments.set(label, newFragment);
-        });
-    }
-
-    private static loadTreeItems(): void
-    {
-        const res = Database._treeItemDatabase.exec("SELECT * FROM treeItems")[0];
-        if (res === undefined)
-        {
-            return;
-        }
-
-        res.values.forEach((element: any[]) => {
-            var label = element[0];
-            var isRoot = undefined;
-            if(element[1] == "true")
-            {
-                isRoot = true;
-            }
-            else
-            {
-                isRoot = false;
-            }
-            var treeItems = element[2];     // TODO: TreeItems have to be parsed from and to string
-            var fragmentLabel = element[3];
-            var newTreeItem = new TreeItem({label: label, isRoot: isRoot, treeItems: treeItems, fragmentLabel: fragmentLabel});
-            Database._loadedTreeItems.set(label, newTreeItem);
         });
     }
 
@@ -234,70 +181,125 @@ export class Database {
         return true;
     }
 
+
+
+    /**
+     * Returns the list of loaded TreeItems
+     */
     static get loadedTreeItems(): TreeItem[]
     {
         return Array.from(Database._loadedTreeItems.values());
     }
 
+    /**
+     * Returns the root TrrItem if it exists, otherwise undefined
+     */
     static getRootTreeItem(): TreeItem | undefined
     {
-        var treeItem = undefined;
-        this._loadedTreeItems.forEach((element) =>
+        if(TreeItem.rootExists)
         {
-            if(element.isRoot)
+            var treeItem: TreeItem | undefined = undefined;
+            this._loadedTreeItems.forEach((element) =>
             {
-                treeItem = element;
-            }
-        })
-        return treeItem;
+                if(element.isRoot)
+                {
+                    treeItem = element;
+                }
+            });
+            return treeItem;
+        }
+        else
+        {
+            return undefined;
+        }
     }
 
-    static addTreeItem(treeItem: TreeItem)
+    /**
+     * Adds the TreeItem to the database
+     * @param treeItem TreeItem to be added
+     */
+    static addTreeItem(treeItem: TreeItem | undefined): void
     {
-        if(treeItem.label !== undefined && !this._loadedTreeItems.has(treeItem.label))
+        if(treeItem !== undefined && treeItem.label !== undefined && !this._loadedTreeItems.has(treeItem.label))
         {
             this._loadedTreeItems.set(treeItem.label, treeItem);
         }
+/*
+        this._loadedTreeItems.forEach((treeItem: TreeItem) =>
+        {
+            console.log(treeItem);
+        });
+        console.log("##################");
+*/
     }
 
-    static deleteTreeItem(label: string)
+    /**
+     * Deletes the TreeItem from the database
+     * @param label Label of TreeItem to be deleted
+     */
+    static deleteTreeItem(label: string | undefined): void
     {
-        if(Database._loadedTreeItems.has(label))
+        if(label !== undefined && Database._loadedTreeItems.has(label))
         {
-            Database._loadedTreeItems.forEach((treeItem: TreeItem) =>
+            var treeItem = Database.getTreeItem(label);
+            if(treeItem !== undefined)
             {
-                treeItem.deleteTreeItem(label);
-            });
-            Database._loadedTreeItems.delete(label);
-           // Database.treeItemsDatabase.run("DELETE FROM fragments WHERE label=?", [label]);
-           // Database.persist();
-            return true;
-        }
-        return false;
-    }
-
-    static updateTreeItem(treeItem: TreeItem)
-    {
-        if(treeItem.label !== undefined)
-        {
-            const oldTreeItem = Database._loadedFragments.get(treeItem.label);
-            if(oldTreeItem  === undefined)
-            {
-                return false;
+                treeItem.parents = undefined;   // Starts a deletion of the TreeItem and all its references in other TreeItems
+                treeItem.childs = undefined;
             }
-    
-            Database._loadedTreeItems.set(treeItem.label, treeItem);
-           // Database._fragmentDatabase.run("UPDATE fragments SET prefix=? , scope=?, body=?, description=?, keywords=?, domain=?, placeholders=? WHERE label=?", [fragment.prefix, fragment.scope, fragment.body, fragment.description, fragment.keywords, fragment.domain, fragment.placeholders, fragment.label]);
-           // Database.persist();
-            return true;
+
+            Database._loadedTreeItems.delete(label);
+           // TODO: Save change in database
+        }
+
+    }
+
+    /**
+     * Replaces TreeItem with the same label as the given TreeItem
+     * @param treeItem TreeItem to replace
+     */
+    static updateTreeItem(treeItem: TreeItem | undefined): void
+    {
+        if(treeItem !== undefined && treeItem.label !== undefined && Database._loadedTreeItems.has(treeItem.label))
+        {
+            Database.deleteTreeItem(treeItem.label);
+            Database.addTreeItem(treeItem);
         }
     }
 
-    static getTreeItem(label: string)
+    /**
+     * 
+     * @param label Returns the TreeItem with the given label
+     */
+    static getTreeItem(label: string | undefined): TreeItem | undefined
     {
-        if(this._loadedTreeItems.has(label))
+        if(label !== undefined && this._loadedTreeItems.has(label))
         {
             return this._loadedTreeItems.get(label);
+        }
+    }
+
+    /**
+     * Returns list of TreeItems for given list of labels
+     * @param labels List of labels for TreeItems to be returned
+     */
+    static getTreeItems(labels: (string|undefined)[] | undefined): TreeItem[] | undefined
+    {
+        if(labels !== undefined)
+        {
+            var treeItemList: TreeItem[] = [];
+            labels.forEach((element: string | undefined) =>
+            {
+                if(element !== undefined)
+                {
+                    var treeItem = Database.getTreeItem(element);
+                    if(treeItem !== undefined)
+                    {
+                        treeItemList.push(treeItem);
+                    }
+                }
+            });
+            return treeItemList;
         }
     }
 }
