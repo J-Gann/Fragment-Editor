@@ -91,11 +91,6 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem>
      */
     addFragment(): void
     {
-        if(this._treeView !== undefined)
-        {
-            var treeViewSelections = this._treeView.selection;
-            var treeViewSelection = treeViewSelections[0];
-        }
         var editor = vscode.window.activeTextEditor;
         var selection: vscode.Selection;
         var textDocument: vscode.TextDocument;
@@ -108,7 +103,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem>
             text = textDocument.getText(new vscode.Range(selection.start, selection.end));
         }
 
-        var input = vscode.window.showInputBox({prompt: "Input a label for the Fragment"});
+        var input = vscode.window.showInputBox({prompt: "Input a label for the Fragment and add it to the selected folders (root folder if nothing selected)"});
         input.then((label) =>
         {
             if(label === "")
@@ -124,15 +119,23 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem>
                 vscode.window.showErrorMessage("Fragment Not Added (label has to be unique)");
             }
             else
-            {
+            {   
+                var treeViewSelections = undefined
+                if(this._treeView !== undefined)
+                {
+                    treeViewSelections = this._treeView.selection;
+                }
                 var obj = FOEF.parametrize(text);
                 var newFragment = new Fragment({...{label: label}, ...obj});
                 var newTreeItem = new TreeItem({label: label, contextValue: "fragment"})
                 Database.addFragment(newFragment);
                 Database.addTreeItem(newTreeItem);
-                if(treeViewSelection !== undefined)
+                if(treeViewSelections !== undefined && treeViewSelections.length > 0)
                 {
-                    treeViewSelection.treeItems.push(newTreeItem);
+                    treeViewSelections.forEach(treeItem =>
+                    {
+                        treeItem.treeItems.push(newTreeItem);
+                    });
                 }
                 else
                 {
@@ -143,7 +146,6 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem>
                     }
                 }
                 vscode.window.showInformationMessage("Fragment Added");
-                this.editFragment(newTreeItem);
             }
             this.refresh();
         });
@@ -154,12 +156,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem>
      */
     addFolder(): void
     {
-        if(this._treeView !== undefined)
-        {
-            var treeViewSelections = this._treeView.selection;
-            var treeViewSelection = treeViewSelections[0];
-        }
-        var input = vscode.window.showInputBox({prompt: "Input a label for the Folder"});
+        var input = vscode.window.showInputBox({prompt: "Input a label for the Folder  and add it to the selected folders (root folder if nothing selected)"});
         input.then((label) =>
         {
             if(label === "")
@@ -176,11 +173,19 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem>
             }
             else
             {
+                var treeViewSelections = undefined;
+                if(this._treeView !== undefined)
+                {
+                    treeViewSelections = this._treeView.selection;
+                }
                 var newTreeItem = new TreeItem({label: label, contextValue: "folder"})
                 Database.addTreeItem(newTreeItem);
-                if(treeViewSelection !== undefined)
+                if(treeViewSelections !== undefined && treeViewSelections.length > 0)
                 {
-                    treeViewSelection.treeItems.push(newTreeItem);
+                    treeViewSelections.forEach(treeItem =>
+                    {
+                        treeItem.treeItems.push(newTreeItem);
+                    });
                 }
                 else
                 {
@@ -189,8 +194,8 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem>
                     {
                         rootTreeItem.treeItems.push(newTreeItem);
                     }
-                }                vscode.window.showInformationMessage("Folder Added");
-                this.editFragment(newTreeItem);
+                }
+                vscode.window.showInformationMessage("Folder Added");
             }
             this.refresh();
         });

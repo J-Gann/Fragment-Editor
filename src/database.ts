@@ -262,7 +262,6 @@ export class Database {
 
     static deleteTreeItem(label: string)
     {
-        console.log(Database._loadedTreeItems.has(label));
         if(Database._loadedTreeItems.has(label))
         {
             Database._loadedTreeItems.forEach((treeItem: TreeItem) =>
