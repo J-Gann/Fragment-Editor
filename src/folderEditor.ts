@@ -1,8 +1,6 @@
-import { Fragment } from "./fragment";
 import * as vscode from 'vscode';
 import { Database } from "./database";
 import { FragmentProvider } from "./fragmentProvider";
-import { FOEF } from "./parametrization";
 import { TreeItem } from "./treeItem";
 
 export class FolderEditor {
@@ -41,9 +39,12 @@ export class FolderEditor {
                         this.panel.onDidDispose();
                         return;
                     case 'submit':
-                        var newFragment = new Fragment({label: message.text.label, prefix: message.text.prefix, scope: message.text.scope, body: message.text.body, description: message.text.description, keywords: message.text.keywords, domain: message.text.domain, placeholders: message.text.placeholders});
-                        const updated: boolean = Database.updateFragment(newFragment);
-                        vscode.window.showInformationMessage(updated? "Fragment edited.": "Fragment not edited.");
+                        var treeItem = Database.getTreeItem(message.text.label);
+                        if(treeItem !== undefined)
+                        {
+                            treeItem.childs = message.text.childs.split(',');
+                            treeItem.parents = message.text.parents.split(',');
+                        }
                         this.fragmentProvider.refresh();
                         this.panel.dispose();
                         this.panel.onDidDispose();
@@ -103,17 +104,19 @@ export class FolderEditor {
         <body>
       
                 <h3 style="float: left; max-width: 70%; overflow: hidden;" id="label" >${treeItem.label}</h3>
-                <button style="float: right; margin: 10px; margin-top: 35px" onclick="cancelFunction()" class="btn waves-effect waves-light" type="submit" name="action">Cancel</button>
-                <button style="float: right; margin: 10px; margin-top: 35px" onclick="submitFunction()" class="btn waves-effect waves-light" type="submit" name="action">Save</button>
+                <!--<button style="float: right; margin: 10px; margin-top: 35px" onclick="cancelFunction()" class="btn waves-effect waves-light" type="submit" name="action">Cancel</button>-->
+                <!--<button style="float: right; margin: 10px; margin-top: 35px" onclick="submitFunction()" class="btn waves-effect waves-light" type="submit" name="action">Save</button>-->
                 <br><br><br><br><br>
-                Tree Items: <input id="treeItems" type="text" value="${treeItem.childs}">
+                Parents: <input id="parents" style="color:lightgrey;" type="text" value="${treeItem.parents}" disabled>
+                Childs: <input id="childs" style="color:lightgrey;" type="text" value="${treeItem.childs}" disabled>
 
             <script>
                 const vscode = acquireVsCodeApi();
                 function submitFunction() {
                     vscode.postMessage({command: 'submit', text: {
-                        "label": document.getElementById("label").innerHTML ,
-                        "treeItems": document.getElementByID("treeItems").innerHTML
+                        "label": document.getElementById("label").innerHTML,
+                        "parents": document.getElementById("parents").value,
+                        "childs": document.getElementById("childs").value
                     }});    
                 }
                 function cancelFunction() {

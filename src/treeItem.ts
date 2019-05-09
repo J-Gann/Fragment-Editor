@@ -115,21 +115,7 @@ export class TreeItem extends vscode.TreeItem
     {
         if(this.contextValue === "folder")
         {
-            // Delete all entries of this TreeItem as parent
-            if(this.childs !== undefined)
-            {
-                this.childs.forEach((treeItemLabel: string | undefined) =>
-                {
-                    if(treeItemLabel !== undefined)
-                    {
-                        var treeItem = Database.getTreeItem(treeItemLabel);
-                        if(treeItem !== undefined)
-                        {
-                            treeItem.deleteParent(this.label);
-                        }
-                    }
-                });
-            }
+            var oldChilds = this.childs;
 
             // Set the new childs
             if(treeItems !== undefined)
@@ -137,7 +123,7 @@ export class TreeItem extends vscode.TreeItem
                 var childsString: string = "";
                 treeItems.forEach((element: string | undefined) =>
                 {
-                    if(element !== undefined)
+                    if(element !== undefined && element.length !== 0)
                     {
                         childsString += element + ',';
                     }
@@ -147,6 +133,22 @@ export class TreeItem extends vscode.TreeItem
             else
             {
                 this._childs = "";
+            }
+
+            // Delete childs that no longer are one
+            if(oldChilds !== undefined && this.childs !== undefined)
+            {
+                oldChilds.forEach((child: string | undefined) =>
+                {
+                    if(!this.childs!.includes(child))
+                    {
+                        var treeItem = Database.getTreeItem(child);
+                        if(treeItem !== undefined)
+                        {
+                            treeItem.deleteParent(this.label);
+                        }
+                    }
+                });
             }
 
             //Add all entries of this TreeItem as parent
@@ -287,21 +289,7 @@ export class TreeItem extends vscode.TreeItem
      */
     set parents(treeItems: (string|undefined)[] | undefined)
     {
-        // Delete all entries of this TreeItem as child
-        if(this.parents !== undefined)
-        {
-            this.parents.forEach((treeItemLabel: string | undefined) =>
-            {
-                if(treeItemLabel !== undefined)
-                {
-                    var treeItem = Database.getTreeItem(treeItemLabel);
-                    if(treeItem !== undefined)
-                    {
-                        treeItem.deleteChild(this.label);
-                    }
-                }
-            });
-        }
+        var oldParents = this.parents;
 
         // Set the new parents
         if(treeItems !== undefined && treeItems.length !== 0)
@@ -321,6 +309,22 @@ export class TreeItem extends vscode.TreeItem
             this._parents = "";
         }
 
+        // Delete parents that no longer are one
+        if(oldParents !== undefined && this.parents !== undefined)
+        {
+            oldParents.forEach((parent: string | undefined) =>
+            {
+                if(!this.parents!.includes(parent))
+                {
+                    var treeItem = Database.getTreeItem(parent);
+                    if(treeItem !== undefined)
+                    {
+                        treeItem.deleteChild(this.label);
+                    }
+                }
+            });
+        }
+
         // Add all entries of this TreeItem as child
         if(this.parents !== undefined)
         {
@@ -329,7 +333,7 @@ export class TreeItem extends vscode.TreeItem
                 if(treeItemLabel !== undefined)
                 {
                     var treeItem = Database.getTreeItem(treeItemLabel);
-                    if(treeItem !== undefined)
+                    if(treeItem !== undefined && treeItemLabel.length !== 0)
                     {
                         treeItem.addChild(this.label);
                     }

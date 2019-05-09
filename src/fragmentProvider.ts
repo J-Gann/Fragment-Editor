@@ -5,7 +5,6 @@ import { FragmentEditor } from './fragmentEditor';
 import { FOEF } from './parametrization';
 import { TreeItem } from './treeItem';
 import { FolderEditor } from './folderEditor';
-import { unwatchFile } from 'fs';
 
 /**
  * Provides fragments that should be displayed in a tree view
@@ -17,8 +16,8 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem>
     private folderEditor: FolderEditor;
     private _treeView: vscode.TreeView<TreeItem> | undefined;
 
-	private _onDidChangeTreeData: vscode.EventEmitter<TreeItem | undefined> = new vscode.EventEmitter<TreeItem | undefined>();
-	readonly onDidChangeTreeData: vscode.Event<TreeItem | undefined> = this._onDidChangeTreeData.event;
+    private _onDidChangeTreeData: vscode.EventEmitter<TreeItem | undefined> = new vscode.EventEmitter<TreeItem | undefined>();
+    readonly onDidChangeTreeData: vscode.Event<TreeItem | undefined> = this._onDidChangeTreeData.event;
 
     constructor(context: vscode.ExtensionContext)
     {
@@ -48,7 +47,6 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem>
             else
             {
                 return Promise.resolve([]);
-
             }
         }
         else
@@ -91,6 +89,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem>
         {
             this.fragmentEditor.showFragment(Database.getFragment(treeItem.fragment));
         }
+        this.refresh();
     }
 
     /**
@@ -103,6 +102,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem>
         {
             this.folderEditor.showFolder(treeItem);
         }
+        this.refresh();
     }
 
     /**
@@ -139,7 +139,6 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem>
             }
             else
             {   
-
                 if(this._treeView !== undefined)
                 {
                     var sel = this._treeView.selection[0];

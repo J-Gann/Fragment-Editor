@@ -23,11 +23,6 @@ export class Database {
 
         var test0 = new TreeItem({label: "Root", isRoot: true, contextValue: "folder"})
         Database._loadedTreeItems.set("Root", test0);
-
-
-
-
-
     }
 
     static createFragmentDatabase(): void
