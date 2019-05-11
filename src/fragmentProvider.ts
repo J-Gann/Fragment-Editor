@@ -3,6 +3,8 @@ import { Fragment } from "./fragment";
 import { Database } from './database';
 import { FragmentEditor } from './fragmentEditor';
 import { FOEF } from './parametrization';
+import { WebViewProvider } from './webViewProvider';
+import { stringify } from 'querystring';
 
 /**
  * Provides fragments that should be displayed in a tree view
@@ -11,6 +13,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
 {
     private fragmentListFilter: string;
     private fragmentEditor: FragmentEditor;
+    private webViewProvider: WebViewProvider;
 
 	private _onDidChangeTreeData: vscode.EventEmitter<Fragment | undefined> = new vscode.EventEmitter<Fragment | undefined>();
 	readonly onDidChangeTreeData: vscode.Event<Fragment | undefined> = this._onDidChangeTreeData.event;
@@ -19,6 +22,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
     {
         this.fragmentListFilter = "";
         this.fragmentEditor = new FragmentEditor(context, this);
+        this.webViewProvider = new WebViewProvider(context, this);
     }
 
     getTreeItem(element: Fragment): vscode.TreeItem
@@ -49,6 +53,47 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
     editEntry(fragment: Fragment): void
     {
         this.fragmentEditor.showFragment(fragment);
+    }
+
+    /**
+     * Opens webView Window
+     */
+    openWeb(): void
+    {
+        var input = vscode.window.showInputBox({prompt: "Input the adress of the page you want to open."});
+        var editor = vscode.window.activeTextEditor;
+        var selection: vscode.Selection;
+        var textDocument: vscode.TextDocument;
+        var text: string;
+
+        if(editor)
+        {
+            selection = editor.selection;
+            textDocument = editor.document;
+            text = textDocument.getText(new vscode.Range(selection.start, selection.end));
+        }
+        else
+        {
+            text = "";
+        }
+
+        input.then((text) =>
+        {
+            if(text === "")
+            {
+                vscode.window.showErrorMessage("no url entered");
+            }
+            else if(text === undefined)
+            {
+                vscode.window.showErrorMessage("cancel");
+            }
+            else
+            {
+                var text2: string = text as string;
+                this.webViewProvider.openWeb(text2);
+            }
+            this.refresh();
+        });
     }
 
     /**

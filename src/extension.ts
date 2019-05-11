@@ -14,6 +14,7 @@ export function activate(context: vscode.ExtensionContext) {
 	vscode.commands.registerCommand('fragmentEditor.deleteEntry', (fragment: Fragment) => fragmentProvider.deleteEntry(fragment));
 	vscode.commands.registerCommand('fragmentEditor.filter', () => fragmentProvider.filter());
 	vscode.commands.registerCommand('fragmentEditor.reset', () => fragmentProvider.reset());
+	vscode.commands.registerCommand('fragmentEditor.openWeb', () => fragmentProvider.openWeb());
 }
 
 export function deactivate() {}

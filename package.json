@@ -26,6 +26,10 @@
 			{
 				"command": "fragmentEditor.filter",
 				"key": "ctrl+shift+f"
+			},
+			{
+				"command": "fragmentEditor.openWeb",
+				"key": "ctrl+shift+e"
 			}
 		],
 		"viewsContainers": {
@@ -64,6 +68,11 @@
 				"command": "fragmentEditor.reset",
 				"title": "Reset",
 				"icon": "media/reset.png"
+			},
+			{
+				"command": "fragmentEditor.openWeb",
+				"title": "Open Webpage",
+				"icon": "media/webpic.png"
 			}
 		],
 		"menus": {
@@ -85,6 +94,10 @@
 				},
 				{
 					"command": "fragmentEditor.reset",
+					"group": "navigation"
+				},
+				{
+					"command": "fragmentEditor.openWeb",
 					"group": "navigation"
 				}
 			],
@@ -111,5 +124,8 @@
 		"tslint": "^5.12.1",
 		"typescript": "^3.3.1",
 		"vscode": "^1.1.28"
+	},
+	"dependencies": {
+		"xmlhttprequest-ts": "^1.0.1"
 	}
 }
