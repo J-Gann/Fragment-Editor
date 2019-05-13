@@ -54,9 +54,7 @@ export class WebViewProvider {
 
         this.panel.title = 'webView';
 
-        this.panel.webview.html = this.getWebviewContent(webadress);
-        console.log(this.panel.webview.html)
-        this.panel.reveal();
+       this.getWebviewContent(webadress);
     }
 
     setthis(resp:any, response:any)
@@ -67,10 +65,15 @@ export class WebViewProvider {
     private getWebviewContent(webadress: string) {
         const http = new XMLHttpRequest();
         http.open("GET", webadress, true);
-        http.send();
+        http.send(null);
         let resp: any;
-        http.onload = () => this.setthis(resp, http.responseText)
-        console.log(resp)
-        return resp;
+        http.onreadystatechange = () =>
+        {
+            if(http.readyState === 4)
+            {
+                this.panel.webview.html = http.responseText;
+                this.panel.reveal();
+            }
+        };
     }
 }
