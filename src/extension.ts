@@ -13,9 +13,7 @@ export function activate(context: vscode.ExtensionContext) {
 	fragmentProvider.treeView = treeView;
 	//vscode.window.registerTreeDataProvider('fragmentEditor', fragmentProvider);
 	vscode.commands.registerCommand('fragmentEditor.addFragment', () => fragmentProvider.addFragment());
-	vscode.commands.registerCommand('fragmentEditor.addFolder', () => fragmentProvider.addFolder());
 	vscode.commands.registerCommand('fragmentEditor.editFragment', (treeItem: TreeItem) => fragmentProvider.editFragment(treeItem));
-	vscode.commands.registerCommand('fragmentEditor.editFolder', (treeItem: TreeItem) => fragmentProvider.editFolder(treeItem));
 	vscode.commands.registerCommand('fragmentEditor.deleteEntry', (treeItem: TreeItem) => fragmentProvider.deleteEntry(treeItem));
 	vscode.commands.registerCommand('fragmentEditor.filter', () => fragmentProvider.filter());
 	vscode.commands.registerCommand('fragmentEditor.reset', () => fragmentProvider.reset());

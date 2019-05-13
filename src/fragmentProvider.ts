@@ -4,7 +4,6 @@ import { Database } from './database';
 import { FragmentEditor } from './fragmentEditor';
 import { FOEF } from './parametrization';
 import { TreeItem } from './treeItem';
-import { FolderEditor } from './folderEditor';
 
 /**
  * Provides fragments that should be displayed in a tree view
@@ -13,7 +12,6 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem>
 {
     private fragmentListFilter: string;
     private fragmentEditor: FragmentEditor;
-    private folderEditor: FolderEditor;
     private _treeView: vscode.TreeView<TreeItem> | undefined;
 
     private _onDidChangeTreeData: vscode.EventEmitter<TreeItem | undefined> = new vscode.EventEmitter<TreeItem | undefined>();
@@ -21,10 +19,81 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem>
 
     constructor(context: vscode.ExtensionContext)
     {
+        /*
+        // Stress test the extension
+        for(var cnt = 0; cnt < 10000; cnt ++)
+        {
+            Database.addFragment(new Fragment({label: String(cnt)}));
+        }
+        */
+        this.createTreeStructure();
         this.fragmentListFilter = "";
         this.fragmentEditor = new FragmentEditor(context, this);
-        this.folderEditor = new FolderEditor(context, this);
         this._treeView = undefined;
+    }
+
+    createTreeStructure()
+    {
+        Database.loadedTreeItems = [];
+        var rootTreeItem = new TreeItem({label: "root", isRoot: true, contextValue: "folder"});
+        Database.addTreeItem(rootTreeItem);
+
+        var fragments = Database.getFragments();
+        if(fragments !== undefined)
+        {
+            fragments.forEach((fragment: Fragment) =>
+            {
+                if(fragment !== undefined)
+                {
+                    var scope = fragment.scope;
+                    if(scope !== undefined && scope !== "" && Database.getTreeItem(scope) === undefined)
+                    {
+                        var newTreeItem1 = new TreeItem({label: scope, contextValue: "folder"});
+                        Database.addTreeItem(newTreeItem1);
+                        rootTreeItem.addChild(newTreeItem1.label);
+
+                        var domain = fragment.domain;
+
+                        if(domain !== undefined && domain !== "" && Database.getTreeItem(domain) === undefined)
+                        {
+                            var newTreeItem2 = new TreeItem({label: domain, contextValue: "folder"});
+                            Database.addTreeItem(newTreeItem2);
+                            newTreeItem1.addChild(newTreeItem2.label);
+                        }
+                    }
+
+                    if(fragment.scope !== undefined && fragment.scope !== "")
+                    {
+                        if(fragment.domain !== undefined && fragment.domain !== "")
+                        {
+                            var newTreeItem3 = new TreeItem({label: fragment.label, contextValue: "fragment", fragment: fragment.label});
+                            Database.addTreeItem(newTreeItem3);
+                            var parent = Database.getTreeItem(fragment.domain);
+                            if(parent !== undefined)
+                            {
+                                parent.addChild(newTreeItem3.label);
+                            }
+                        }
+                        else
+                        {
+                            var newTreeItem4 = new TreeItem({label: fragment.label, contextValue: "fragment", fragment: fragment.label});
+                            Database.addTreeItem(newTreeItem4);
+                            var parent = Database.getTreeItem(fragment.scope);
+                            if(parent !== undefined)
+                            {
+                                parent.addChild(newTreeItem4.label);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        var newTreeItem5 = new TreeItem({label: fragment.label, contextValue: "fragment", fragment: fragment.label});
+                        Database.addTreeItem(newTreeItem5);
+                        rootTreeItem.addChild(newTreeItem5.label);
+                    }
+                }
+            });
+        }
     }
 
     getTreeItem(element: TreeItem): vscode.TreeItem
@@ -46,12 +115,13 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem>
             }
             else
             {
+                console.log("[E] | [FragmentProvider | getChildren]: List of childs for TreeItem undefined");
                 return Promise.resolve([]);
             }
         }
         else
         {
-            var rootTreeItem = Database.getRootTreeItem();
+            var rootTreeItem = Database.getTreeItem("root");
             if(rootTreeItem !== undefined)
             {
                 var rootlist = Database.getTreeItems(rootTreeItem.childs);
@@ -61,11 +131,13 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem>
                 }
                 else
                 {
+                    console.log("[E] | [FragmentProvider | getChildren]: List of childs for root TreeItem undefined");
                     return Promise.resolve([]);
                 }
             }
             else
             {
+                console.log("[E] | [FragmentProvider | getChildren]: Root TreeItem undefined");
                 return Promise.resolve([]);
             }
         }
@@ -76,6 +148,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem>
      */
     refresh(): void
     {
+        this.createTreeStructure();
         this._onDidChangeTreeData.fire();
 	}
 
@@ -85,24 +158,15 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem>
      */
     editFragment(treeItem: TreeItem | undefined): void
     {
-        if(treeItem !== undefined && treeItem.contextValue === "fragment" && treeItem.fragment !== undefined)
+        if(treeItem !== undefined && treeItem.contextValue === "fragment" && treeItem.fragment !== undefined && Database.getTreeItem(treeItem.label) !== undefined)
         {
             this.fragmentEditor.showFragment(Database.getFragment(treeItem.fragment));
+            this.refresh();
         }
-        this.refresh();
-    }
-
-    /**
-     * Opens the editor for the given folder
-     * @param treeItem Folder that should be edited
-     */
-    editFolder(treeItem: TreeItem | undefined): void
-    {
-        if(treeItem !== undefined && treeItem.contextValue === "folder")
+        else
         {
-            this.folderEditor.showFolder(treeItem);
+            console.log("[W] | [FragmentProvider | editFragment]: Can not edit Fragment with the label: " + treeItem);
         }
-        this.refresh();
     }
 
     /**
@@ -138,70 +202,18 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem>
                 vscode.window.showErrorMessage("Fragment Not Added (label has to be unique)");
             }
             else
-            {   
-                if(this._treeView !== undefined)
-                {
-                    var sel = this._treeView.selection[0];
-                    if(sel !== undefined && sel.label !== undefined)
-                    {
-                        var obj = FOEF.parametrize(text);
-                        var newFragment = new Fragment({...{label: label}, ...obj});
-                        var newTreeItem = new TreeItem({label: label, contextValue: "fragment", parents: [sel.label]});
-                        Database.addFragment(newFragment);
-                        Database.addTreeItem(newTreeItem);
-                    }
-                    else
-                    {
-                        var obj = FOEF.parametrize(text);
-                        var newFragment = new Fragment({...{label: label}, ...obj});
-                        var newTreeItem = new TreeItem({label: label, contextValue: "fragment"});
-                        Database.addFragment(newFragment);
-                        Database.addTreeItem(newTreeItem);
-                    }
-                }
-                vscode.window.showInformationMessage("Fragment Added");
-            }
-            this.refresh();
-        });
-    }
+            {  
+                var rootTreeitem = Database.getTreeItem("root");
 
-    /**
-     * Creates a new folder by opening a input dialog to enter a new label
-     */
-    addFolder(): void
-    {
-        var input = vscode.window.showInputBox({prompt: "Input a label for the Folder  and add it to the selected folders (root folder if nothing selected)"});
-        input.then((label) =>
-        {
-            if(label === "")
-            {
-                vscode.window.showErrorMessage("Folder Not Added (no empty label allowed)");
-            }
-            else if(label === undefined)
-            {
-                vscode.window.showErrorMessage("Folder Not Added");
-            }
-            else if(Database.getTreeItem(label))
-            {
-                vscode.window.showErrorMessage("Folder Not Added (label has to be unique)");
-            }
-            else
-            {
-                if(this._treeView !== undefined)
+                if(rootTreeitem !== undefined)
                 {
-                    var sel = this._treeView.selection[0];
-                    if(sel !== undefined && sel.label !== undefined)
-                    {
-                        var newTreeItem = new TreeItem({label: label, contextValue: "folder", parents: [sel.label]});
-                        Database.addTreeItem(newTreeItem);
-                    }
-                    else
-                    {
-                        var newTreeItem = new TreeItem({label: label, contextValue: "folder"});
-                        Database.addTreeItem(newTreeItem);
-                    }
+                    var obj = FOEF.parametrize(text);
+                    var newFragment = new Fragment({...{label: label}, ...obj});
+                    Database.addFragment(newFragment);
+
+                    vscode.window.showInformationMessage("Fragment Added");
                 }
-                vscode.window.showInformationMessage("Folder Added");
+
             }
             this.refresh();
         });
@@ -213,8 +225,12 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem>
      */
     deleteEntry(treeItem: TreeItem): void
     {
-        Database.deleteTreeItem(treeItem.label);
-        this.refresh();
+        var fragmentLabel = treeItem.fragment;
+        if(fragmentLabel !== undefined && fragmentLabel !== "")
+        {
+            Database.deleteFragment(fragmentLabel);
+            this.refresh();
+        }
     }
 
     /**

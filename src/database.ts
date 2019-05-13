@@ -20,9 +20,6 @@ export class Database {
         Database._loadedFragments = new Map();
         Database.loadFragments();
         Database._loadedTreeItems = new Map();
-
-        var test0 = new TreeItem({label: "Root", isRoot: true, contextValue: "folder"})
-        Database._loadedTreeItems.set("Root", test0);
     }
 
     static createFragmentDatabase(): void
@@ -187,29 +184,6 @@ export class Database {
     }
 
     /**
-     * Returns the root TrrItem if it exists, otherwise undefined
-     */
-    static getRootTreeItem(): TreeItem | undefined
-    {
-        if(TreeItem.rootExists)
-        {
-            var treeItem: TreeItem | undefined = undefined;
-            this._loadedTreeItems.forEach((element) =>
-            {
-                if(element.isRoot)
-                {
-                    treeItem = element;
-                }
-            });
-            return treeItem;
-        }
-        else
-        {
-            return undefined;
-        }
-    }
-
-    /**
      * Adds the TreeItem to the database
      * @param treeItem TreeItem to be added
      */
@@ -244,14 +218,8 @@ export class Database {
         if(label !== undefined && Database._loadedTreeItems.has(label))
         {
             var treeItem = Database.getTreeItem(label);
-            if(treeItem !== undefined)
-            {
-                treeItem.parents = undefined;   // Starts a deletion of the TreeItem and all its references in other TreeItems
-                treeItem.childs = undefined;
-            }
 
             Database._loadedTreeItems.delete(label);
-           // TODO: Save change in database
         }
 
     }
@@ -285,7 +253,7 @@ export class Database {
      * Returns list of TreeItems for given list of labels
      * @param labels List of labels for TreeItems to be returned
      */
-    static getTreeItems(labels: (string|undefined)[] | undefined): TreeItem[] | undefined
+    static getTreeItems(labels?: (string|undefined)[] | undefined): TreeItem[] | undefined
     {
         if(labels !== undefined)
         {
@@ -303,5 +271,21 @@ export class Database {
             });
             return treeItemList;
         }
+        else
+        {
+            return Array.from(this._loadedTreeItems.values());
+        }
+    }
+
+    static set loadedTreeItems(treeItems: TreeItem[])
+    {
+        this._loadedTreeItems.clear();
+        treeItems.forEach((treeItem: TreeItem) =>
+        {
+            if(treeItem.label !== undefined)
+            {
+                this._loadedTreeItems.set(treeItem.label, treeItem);
+            }
+        })
     }
 }
