@@ -38,7 +38,7 @@ export class Database {
 
         const filebuffer = fs.readFileSync(Database._fragmentDirectory + '/fragments.fragmentDatabase');
         Database._fragmentDatabase = new sql.Database(filebuffer);
-        Database._fragmentDatabase.run("CREATE TABLE IF NOT EXISTS fragments (label char PRIMARY KEY,prefix char,scope char,body char,description char,keywords char,domain char,placeholders char,snippet char);");
+        Database._fragmentDatabase.run("CREATE TABLE IF NOT EXISTS fragments (label char PRIMARY KEY,prefix char,scope char,body char,description char,keywords char,tags char,domain char,placeholders char,snippet char);");
         Database.persist();
     }
 
@@ -57,9 +57,10 @@ export class Database {
             var body = element[3];
             var description = element[4];
             var keywords = element[5];
-            var domain = element[6];
-            var placeholders = element[7];
-            var newFragment = new Fragment({label: label, prefix: prefix, scope: scope, body: body, description: description, keywords: keywords, domain: domain, placeholders: placeholders});
+            var tags = element[6];
+            var domain = element[7];
+            var placeholders = element[8];
+            var newFragment = new Fragment({label: label, prefix: prefix, scope: scope, body: body, description: description, keywords: keywords, tags: tags, domain: domain, placeholders: placeholders});
             Database._loadedFragments.set(label, newFragment);
         });
     }
@@ -143,7 +144,7 @@ export class Database {
             return false;
         }
         Database._loadedFragments.set(fragment.label, fragment);
-        Database._fragmentDatabase.run("INSERT INTO fragments VALUES (?,?,?,?,?,?,?,?,?)", [fragment.label, fragment.prefix, fragment.scope, fragment.body, fragment.description, fragment.keywords, fragment.domain, fragment.placeholders,fragment.snippet]);
+        Database._fragmentDatabase.run("INSERT INTO fragments VALUES (?,?,?,?,?,?,?,?,?,?)", [fragment.label, fragment.prefix, fragment.scope, fragment.body, fragment.description, fragment.keywords, fragment.tags, fragment.domain, fragment.placeholders,fragment.snippet]);
         Database.persist();
         return true;
     }
@@ -166,9 +167,8 @@ export class Database {
         {
             return false;
         }
-
         Database._loadedFragments.set(fragment.label, fragment);
-        Database._fragmentDatabase.run("UPDATE fragments SET prefix=? , scope=?, body=?, description=?, keywords=?, domain=?, placeholders=? WHERE label=?", [fragment.prefix, fragment.scope, fragment.body, fragment.description, fragment.keywords, fragment.domain, fragment.placeholders, fragment.label]);
+        Database._fragmentDatabase.run("UPDATE fragments SET prefix=? , scope=?, body=?, description=?, keywords=?, tags=?, domain=?, placeholders=? WHERE label=?", [fragment.prefix, fragment.scope, fragment.body, fragment.description, fragment.keywords, fragment.tags, fragment.domain, fragment.placeholders, fragment.label]);
         Database.persist();
         return true;
     }
@@ -193,20 +193,20 @@ export class Database {
         {
             this._loadedTreeItems.set(treeItem.label, treeItem);
         }
-/*
+
         this._loadedTreeItems.forEach((treeItem: TreeItem) =>
         {
             console.log(treeItem);
         });
         console.log("##################");
-*/
-/*
+
+
         this._loadedFragments.forEach((treeItem: Fragment) =>
         {
             console.log(treeItem);
         });
         console.log("##################");
-*/
+
     }
 
     /**
@@ -217,8 +217,6 @@ export class Database {
     {
         if(label !== undefined && Database._loadedTreeItems.has(label))
         {
-            var treeItem = Database.getTreeItem(label);
-
             Database._loadedTreeItems.delete(label);
         }
 

@@ -40,7 +40,7 @@ export class FragmentEditor {
                         this.panel.onDidDispose();
                         return;
                     case 'submit':
-                        var newFragment = new Fragment({label: message.text.label, prefix: message.text.prefix, scope: message.text.scope, body: message.text.body, description: message.text.description, keywords: message.text.keywords, domain: message.text.domain, placeholders: message.text.placeholders});
+                        var newFragment = new Fragment({label: message.text.label, prefix: message.text.prefix, scope: message.text.scope, body: message.text.body, description: message.text.description, keywords: message.text.keywords, tags: message.text.tags, domain: message.text.domain, placeholders: message.text.placeholders});
                         const updated: boolean = Database.updateFragment(newFragment);
                         vscode.window.showInformationMessage(updated? "Fragment edited.": "Fragment not edited.");
                         this.fragmentProvider.refresh();
@@ -110,6 +110,7 @@ export class FragmentEditor {
                   <br><br><br><br><br>
                   Description: <input id="description" type="text" value="${fragment.description}">
                   Keywords: <input id="keywords" type="text" value="${fragment.keywords}">
+                  Tags: <input id="tags" type="text" value="${fragment.tags}">
                   Prefix: <input id="prefix" type="text" value="${fragment.prefix}">
                   Body: <textarea id="body" rows="16">${fragment.body}</textarea>
                   <button title="Replaces Keywords, Body and Placeholders" style="float: right; margin: 10px; margin-top: 5px" onclick="parametrize()" class="btn waves-effect waves-light" type="submit" name="action">Parametrize</button>
@@ -126,6 +127,7 @@ export class FragmentEditor {
                           "label":  document.getElementById("label").innerHTML ,
                           "description": document.getElementById("description").value, 
                           "keywords": document.getElementById("keywords").value,
+                          "tags": document.getElementById("tags").value,
                           "prefix": document.getElementById("prefix").value, 
                           "body": document.getElementById("body").value,
                           "scope": document.getElementById("scope").value,

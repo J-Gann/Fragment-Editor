@@ -41,18 +41,8 @@
 				"icon": "media/fragment.png"
 			},
 			{
-				"command": "fragmentEditor.deleteEntry",
+				"command": "fragmentEditor.deleteTreeItem",
 				"title": "Delete"
-			},
-			{
-				"command": "fragmentEditor.filter",
-				"title": "Filter",
-				"icon": "media/filter.png"
-			},
-			{
-				"command": "fragmentEditor.reset",
-				"title": "Reset",
-				"icon": "media/reset.png"
 			}
 		],
 		"menus": {
@@ -67,19 +57,11 @@
 				{
 					"command": "fragmentEditor.addFragment",
 					"group": "navigation"
-				},
-				{
-					"command": "fragmentEditor.filter",
-					"group": "navigation"
-				},
-				{
-					"command": "fragmentEditor.reset",
-					"group": "navigation"
 				}
 			],
 			"view/item/context": [
 				{
-					"command": "fragmentEditor.deleteEntry",
+					"command": "fragmentEditor.deleteTreeItem",
 					"group": "inline",
 					"when": "viewItem == fragment"
 				}

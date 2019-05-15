@@ -1,121 +1,142 @@
 import * as vscode from "vscode";
 import { Database } from "./database";
 
-/**
- * Elements that get listed in the TreeView.
- * Can be of type 'folder' and 'fragment'
- * A folder contains other folders and/or fragments
- */
 export class TreeItem extends vscode.TreeItem
 {
-    private _isRoot: boolean;   // Is the current TreeItem the root?
-
-    private _childs: string | undefined;    // List of child TreeItems
-
-    private _fragment: string | undefined;   // The corresponding fragment if TreeItem is no folder (identified by th fragment label)
-
     /**
-     * Constructs a TreeItem
-     * @param obj label: Unique identifier of the TreeItem | contextValue: "folder" or "fragment" | fragmentLabel: label of a fragment if contextValue is 'fragment' | isRoot: "true" if TreeItem is root of the TreeView, else "false"
-     */
-    constructor({label, isRoot=false, fragment=label, contextValue="fragment"}: {label: string, isRoot?: boolean, fragment?: string, contextValue?: string})
-    {
-        super(label);
+    * TreeItem can either be a tag containing other TreeItems or a Fragment.
+    * A Fragment is represented by a seperate TreeItem for each tag it is assigned to.
+    */
 
-        if(contextValue === "folder")
-        {
-            this.contextValue = "folder";
-            this._isRoot = isRoot;
-            this._childs = "";
-            this._fragment = undefined;
-            this.collapsibleState = 1;
-            this.command = {command: "fragmentEditor.editFolder", title: "Edit Folder", arguments: [this]};
-        }
-        else
-        {
-            this.contextValue = "fragment";
-            this._isRoot = false;
-            this.collapsibleState = 0;
-            this._childs = undefined;
-            this._fragment = label;
-            this.command = {command: "fragmentEditor.editFragment", title: "Edit Fragment", arguments: [this]};
-        }
-    }
+    // Properties for a TreeItem (inherited by vscode.TreeItem)
+    // label: string;           // Naming of the TreeItem. Is the name of the tag for TreeItem of type 'tag' and the label of the Fragment for the TreeItem of type 'fragment'.
+    // contextValue: string;    // Destinction between type of 'tag' and 'fragment' of the TreeItem.
 
-    /**
-     * Returns label of the fragment corresponding to this TreeItem if the contextValue is 'fragment', undefined otherwise.
-     */
-    get fragment(): string | undefined
-    {
-        return this._fragment;
-    }
+    // Properties for a tag TreeItem
+    private _childs: string[] | undefined;  // Labels of TreeItems that are childs of the tag. Only TreeItemy of type 'fragment' can be a child.
 
-    /**
-     * Set the fragment of the curren TreeItem if the contextValue is 'fragment' and the given lable is defined, otherwise ineffective
-     */
-    set fragment(label: string | undefined)
-    {
-        if(this.contextValue === "fragment" && label !== undefined && label !== "")
-        {
-            this._fragment = label;
-        }
-        else
-        {
-            console.log("[W] | [TreeItem | set fragment]: Failed");
-        }
-    }
+    // Properties for a fragment TreeItem
+    private _tag: string | undefined;       // The label of a TreeItem of type 'tag' the TreeItem of type 'fragment' is assigned to.
 
-    /**
-     * Returns list of labels of TreeItems being a child of the current TreeItem if the contextValue is 'folder', otherwise undefined
-     */
-    get childs(): (string|undefined)[] | undefined
+    constructor(parameter: {label: string, contextValue: string, childs?: string[], tag?: string})
     {
-        if(this.contextValue === "folder")
+        super(parameter.label);
+
+        this.contextValue = parameter.contextValue;
+
+        if(this.contextValue === "tag")
         {
-            if(this._childs !== undefined)
+            if(parameter.childs !== undefined)
             {
-                var returnList: string[] = [];
-                var childsList = this._childs.split(',');
-                childsList.forEach((element: string) =>
-                {
-                    if(element.length !== 0)
-                    {
-                        returnList.push(element);
-                    }
-                });
-                return returnList;
+                this._childs = parameter.childs;
             }
             else
             {
-                return [];
+                this._childs = []
             }
+            this._tag = undefined;
+            this.collapsibleState = 1;
+            this.command = {command: "fragmentEditor.edittag", title: "Edit tag", arguments: [this]};
+        }
+        else if(this.contextValue === "fragment")
+        {
+            this._childs = undefined;
+            if(parameter.tag !== undefined)
+            {
+                this._tag = parameter.tag;
+            }
+            else
+            {
+                this._tag = undefined;
+            }
+            this.collapsibleState = 0;
+            this.command = {command: "fragmentEditor.editFragment", title: "Edit Fragment", arguments: [this]};
+        }
+        else
+        {
+            console.log("[W] | [TreeItem | constructor]: Failed");
+        }
+    }
+
+    get childs(): string[] | undefined
+    {
+        if(this.contextValue === "tag" && this._childs !== undefined)
+        {
+            return this._childs;
         }
         else
         {
             console.log("[W] | [TreeItem | get childs]: Failed");
+            return undefined
         }
     }
 
-    /**
-     * Adds the given lable to the list of childs of the current TreeView. Adds this TreeView as parent of the new child.
-     * @param treeItem Label of TreeItem to be added as child
-     */
-    addChild(treeItem: string | undefined): void
+    set childs(childs: string[] | undefined)
     {
-        if(treeItem !== undefined && treeItem !== "" && this.contextValue === "folder")
+        if(this.contextValue === "tag" && childs !== undefined)
         {
-            if(this._childs !== undefined)
-            {
-                this._childs += treeItem + ',';
-            }
-            else
-            {
-                this._childs = treeItem + ',';
-            }
+            this._childs = childs;
         }
         else
         {
-            console.log("[W] | [TreeItem | addChild]: Failed for label: " + treeItem);
+            console.log("[W] | [TreeItem | set childs]: Failed for parameter: " + childs);
+        }
+    }
+
+    get tag(): string | undefined
+    {
+        if(this.contextValue === "fragment")
+        {
+            return this._tag;
+        }
+        else
+        {
+            console.log("[W] | [TreeItem | get tag]: Failed for TreeItem: " + this.label);
+            return undefined;
+        }
+    }
+
+    set tag(tag: string | undefined)
+    {
+        if(this.contextValue === "fragment" && tag !== undefined)
+        {
+            this._tag = tag;
+        }
+        else
+        {
+            console.log("[W] | [TreeItem | set tag]: Failed for parameter: " + tag);
+        }
+    }
+
+    addChild(child: string | undefined)
+    {
+        if(this.contextValue === "tag" && child !== undefined && this._childs !== undefined)
+        {
+            this._childs.push(child);
+        }
+        else
+        {
+            console.log("[W] | [TreeItem | addChild]: Failed for parameter: " + child);
+        }
+    }
+
+    removeChild(newChild: string | undefined)
+    {
+        if(this.contextValue === "tag" && newChild !== undefined && this._childs !== undefined)
+        {
+            var newChilds: string[] = [];
+            this._childs.forEach((child: string) =>
+            {
+                if(child !== newChild)
+                {
+                    newChilds.push(child);
+                }
+            });
+            this._childs = newChilds;
+        }
+        else
+        {
+            console.log("[W] | [TreeItem | removeChild]: Failed for parameter: " + newChild);
         }
     }
 }

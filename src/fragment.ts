@@ -10,12 +10,12 @@ export class Fragment extends vscode.TreeItem {
     private _description: string | undefined;
     // additional properties
     private _keywords: string | undefined;
+    private _tags: string | undefined;
     private _domain: string | undefined;
     private _placeholders: string | undefined;
-    private _object: {label: string, keywords?: string, prefix?: string, body?: string, scope?: string, domain?: string, placeholders?: string, description?: string};
     private _snippet: string;
 
-    constructor(obj:{label: string, keywords?: string, prefix?: string, body?: string, scope?: string, domain?: string, placeholders?: string, description?: string})
+    constructor(obj:{label: string, keywords?: string, tags?: string, prefix?: string, body?: string, scope?: string, domain?: string, placeholders?: string, description?: string})
     {
         super(obj.label);
         this._label = obj.label;
@@ -29,6 +29,14 @@ export class Fragment extends vscode.TreeItem {
             else
             {
                 this._keywords = "";
+            }
+            if(obj.tags !== undefined)
+            {
+                this._tags = obj.tags;
+            }
+            else
+            {
+                this._tags = "";
             }
             if(obj.prefix !== undefined)
             {
@@ -79,7 +87,6 @@ export class Fragment extends vscode.TreeItem {
                 this._description = "";
             }
         }
-        this._object = obj;
         this._snippet = Fragment.createSnippet(this);
         this.command = {command: "fragmentEditor.editEntry", title: "Edit Node", arguments: [this]};
     }
@@ -147,6 +154,11 @@ export class Fragment extends vscode.TreeItem {
         return this._keywords;
     }
 
+    get tags(): string| undefined
+    {
+        return this._tags;
+    }
+
     get domain(): string | undefined
     {
         return this._domain;
@@ -155,11 +167,6 @@ export class Fragment extends vscode.TreeItem {
     get placeholders(): string | undefined
     {
         return this._placeholders;
-    }
-
-    get object(): {label: string, keywords?: string, prefix?: string, body?: string, scope?: string, domain?: string, placeholders?: string, description?: string}
-    {
-        return this._object;
     }
 
     get snippet(): string
@@ -172,4 +179,34 @@ export class Fragment extends vscode.TreeItem {
     {
         this._label = label;
     }
+
+    addTag(tag: string | undefined)
+    {
+        if(this._tags !== undefined && tag !== undefined)
+        {
+            var tags = this._tags.split(',');
+            if(!tags.includes(tag))
+            {
+                this._tags += tag + ',';
+            }
+        }
+    }
+
+    removeTag(newTag: string | undefined)
+    {
+        if(this._tags !== undefined && newTag !== undefined)
+        {
+            var newTags = "";
+            var tags = this._tags.split(',');
+            tags.forEach((tag: string) =>
+            {
+                if(tag !== newTag && tag.length !== 0)
+                {
+                    newTags += tag + ',';
+                }
+            });
+            this._tags = newTags;
+        }
+    }
+
 }
