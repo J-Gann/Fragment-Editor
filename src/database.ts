@@ -8,9 +8,6 @@ export class Database {
     private static _fragmentDatabase: any;
     private static _fragmentDirectory: string;
     private static _loadedFragments: Map<string, Fragment>;
-
-    private static _treeItemDatabase: any;
-    private static _treeItemDirectory: string;
     private static _loadedTreeItems: Map<string, TreeItem>;
 
     constructor(path: string)
@@ -72,11 +69,245 @@ export class Database {
         fs.writeFileSync(Database._fragmentDirectory + '/fragments.fragmentDatabase', buffer1);
     }
 
-    static getFragments(): Fragment[]
+    static get loadedFragments(): Fragment[]
     {
         return Array.from(Database._loadedFragments.values());
     }
 
+    /**
+     * Return all fragments or the ones which labels were given
+     * @param labels Labels for which fragments should be returned
+     */
+    static getFragments(labels?: (string|undefined)[]): Fragment[]
+    {
+        if(labels !== undefined)
+        {
+            var fragments: Fragment[] = [];
+            labels.forEach((label: string|undefined) =>
+            {
+                var occuredLabels: string[] = [];
+                if(label !== undefined && !occuredLabels.includes(label))
+                {
+                    occuredLabels.push(label);
+                    var fragment = Database._loadedFragments.get(label);
+                    if(fragment !== undefined)
+                    {
+                        fragments.push(fragment);
+                    }
+                }
+            });
+            return fragments;
+        }
+        else
+        {
+            return Array.from(Database._loadedFragments.values());
+        }
+    }
+
+    /**
+     * Return the Fragment with the given label
+     * @param label Label of the Fragment
+     */
+    static getFragment(label: string): Fragment | undefined
+    {
+        var fragment = Database._loadedFragments.get(label);
+        if(fragment !== undefined)
+        {
+            return fragment;
+        }
+        else
+        {
+            console.log("[W] | [Database | getFragment]: Failed for parameter: " + label);
+            return undefined;
+        }
+    }
+
+    /**
+     * Adds the given Fragment to the Database
+     * @param fragment Fragment to be added
+     */
+    static addFragment(fragment: Fragment | undefined): boolean
+    {
+        if(fragment === undefined || Database._loadedFragments.has(fragment.label))
+        {
+            console.log("[W] | [Database | addFragment]: Failed for fragment: " + fragment);
+            return false;
+        }
+        else
+        {
+            Database._loadedFragments.set(fragment.label, fragment);
+            Database._fragmentDatabase.run("INSERT INTO fragments VALUES (?,?,?,?,?,?,?,?,?,?)", [fragment.label, fragment.prefix, fragment.scope, fragment.body, fragment.description, fragment.keywords, fragment.tags, fragment.domain, fragment.placeholders,fragment.snippet]);
+            Database.persist();
+            return true;
+        }
+    }
+
+    /**
+     * Delete a Fragment from the Database
+     * @param label Label of Fragment
+     */
+    static deleteFragment(label: string | undefined) : boolean
+    {
+        if(label !== undefined && Database._loadedFragments.has(label))
+        {
+            Database._loadedFragments.delete(label);
+            Database._fragmentDatabase.run("DELETE FROM fragments WHERE label=?", [label]);
+            Database.persist();
+            return true;
+        }
+        else
+        {
+            console.log("[W] | [Database | deleteFragment]: Failed for label: " + label);
+            return false;
+        }
+    }
+
+    /**
+     * Replace a Fragment with the same label as the given Fragment
+     * @param fragment Fragment as it should be in the Database
+     */
+    static updateFragment(fragment: Fragment |undefined): boolean
+    {
+        if(fragment !== undefined && Database._loadedFragments.get(fragment.label) !== undefined)
+        {
+            Database._loadedFragments.set(fragment.label, fragment);
+            Database._fragmentDatabase.run("UPDATE fragments SET prefix=? , scope=?, body=?, description=?, keywords=?, tags=?, domain=?, placeholders=? WHERE label=?", [fragment.prefix, fragment.scope, fragment.body, fragment.description, fragment.keywords, fragment.tags, fragment.domain, fragment.placeholders, fragment.label]);
+            Database.persist();
+            return true;
+        }
+        else
+        {
+            console.log("[W] | [Database | updateFragment]: Failed for fragment: " + fragment);
+            return false;
+        }
+    }
+
+    static get loadedTreeItems(): TreeItem[]
+    {
+        return Array.from(Database._loadedTreeItems.values());
+    }
+
+    static set loadedTreeItems(treeItems: TreeItem[])
+    {
+        this._loadedTreeItems.clear();
+        treeItems.forEach((treeItem: TreeItem) =>
+        {
+            if(treeItem.label !== undefined)
+            {
+                this._loadedTreeItems.set(treeItem.label, treeItem);
+            }
+        });
+    }
+
+    /**
+     * Adds the TreeItem to the database
+     * @param treeItem TreeItem to be added
+     */
+    static addTreeItem(treeItem: TreeItem | undefined): boolean
+    {
+        if(treeItem !== undefined && treeItem.label !== undefined && !this._loadedTreeItems.has(treeItem.label))
+        {
+            this._loadedTreeItems.set(treeItem.label, treeItem);
+            return true;
+        }
+        else
+        {
+            console.log("[W] | [Database | addTreeItem]: Failed for TreeItem: " + treeItem);
+            return false;
+        }
+    }
+
+    /**
+     * Deletes the TreeItem from the database
+     * @param label Label of TreeItem to be deleted
+     */
+    static deleteTreeItem(label: string | undefined): boolean
+    {
+        if(label !== undefined && Database._loadedTreeItems.has(label))
+        {
+            Database._loadedTreeItems.delete(label);
+            return true;
+        }
+        else
+        {
+            console.log("[W] | [Database | deleteTreeItem]: Failed for label: " + label);
+            return false;
+        }
+    }
+
+    /**
+     * Replaces TreeItem with the same label as the given TreeItem
+     * @param treeItem TreeItem as it should be in the Database
+     */
+    static updateTreeItem(treeItem: TreeItem | undefined): boolean
+    {
+        if(treeItem !== undefined && treeItem.label !== undefined && Database._loadedTreeItems.has(treeItem.label))
+        {
+            Database._loadedTreeItems.set(treeItem.label, treeItem);
+            return true;
+        }
+        else
+        {
+            console.log("[W] | [Database | updateTreeItem]: Failed for TreeItem: " + treeItem);
+            return false;
+        }
+    }
+
+    /**
+     * Return the TreeItem with the given label
+     * @param label Label of the TreeItem
+     */
+    static getTreeItem(label: string | undefined): TreeItem | undefined
+    {
+        console.log("############")
+        Array.from(this._loadedTreeItems.values()).forEach((treeItem: TreeItem) =>
+        {
+            console.log(treeItem);
+        });
+        
+
+        if(label !== undefined && this._loadedTreeItems.has(label))
+        {
+            return this._loadedTreeItems.get(label);
+        }
+        else
+        {
+            console.log("[W] | [Database | getTreeItem]: Failed for label: " + label);
+            return undefined;
+        }
+    }
+
+    /**
+     * Return all Treeitems or the ones which labels were given
+     * @param labels List of labels for TreeItems to be returned
+     */
+    static getTreeItems(labels?: (string|undefined)[] | undefined): TreeItem[]
+    {
+        if(labels !== undefined)
+        {
+            var treeItems: TreeItem[] = [];
+            labels.forEach((label: string|undefined) =>
+            {
+                var occuredLabels: string[] = [];
+                if(label !== undefined && !occuredLabels.includes(label))
+                {
+                    occuredLabels.push(label);
+                    var treeItem = Database._loadedTreeItems.get(label);
+                    if(treeItem !== undefined)
+                    {
+                        treeItems.push(treeItem);
+                    }
+                }
+            });
+            return treeItems;
+        }
+        else
+        {
+            return Array.from(Database._loadedTreeItems.values());
+        }
+    }
+
+    
     static getFilteredFragments(filter: string): Fragment[]
     {
         if(filter === "")
@@ -130,160 +361,5 @@ export class Database {
             }
         });
         return fragmentList;
-    }
-
-    static getFragment(label: string): Fragment | undefined
-    {
-        return Database._loadedFragments.get(label);
-    }
-
-    static addFragment(fragment: Fragment)
-    {
-        if(Database._loadedFragments.has(fragment.label))
-        {
-            return false;
-        }
-        Database._loadedFragments.set(fragment.label, fragment);
-        Database._fragmentDatabase.run("INSERT INTO fragments VALUES (?,?,?,?,?,?,?,?,?,?)", [fragment.label, fragment.prefix, fragment.scope, fragment.body, fragment.description, fragment.keywords, fragment.tags, fragment.domain, fragment.placeholders,fragment.snippet]);
-        Database.persist();
-        return true;
-    }
-
-    static deleteFragment (label: string) : boolean
-    {
-        if (Database._loadedFragments.has(label)) {
-            Database._loadedFragments.delete(label);
-            Database._fragmentDatabase.run("DELETE FROM fragments WHERE label=?", [label]);
-            Database.persist();
-            return true;
-        }
-        return false;
-    }
-
-    static updateFragment(fragment: Fragment): boolean
-    {
-        const oldFragment = Database._loadedFragments.get(fragment.label);
-        if (oldFragment === undefined)
-        {
-            return false;
-        }
-        Database._loadedFragments.set(fragment.label, fragment);
-        Database._fragmentDatabase.run("UPDATE fragments SET prefix=? , scope=?, body=?, description=?, keywords=?, tags=?, domain=?, placeholders=? WHERE label=?", [fragment.prefix, fragment.scope, fragment.body, fragment.description, fragment.keywords, fragment.tags, fragment.domain, fragment.placeholders, fragment.label]);
-        Database.persist();
-        return true;
-    }
-
-
-
-    /**
-     * Returns the list of loaded TreeItems
-     */
-    static get loadedTreeItems(): TreeItem[]
-    {
-        return Array.from(Database._loadedTreeItems.values());
-    }
-
-    /**
-     * Adds the TreeItem to the database
-     * @param treeItem TreeItem to be added
-     */
-    static addTreeItem(treeItem: TreeItem | undefined): void
-    {
-        if(treeItem !== undefined && treeItem.label !== undefined && !this._loadedTreeItems.has(treeItem.label))
-        {
-            this._loadedTreeItems.set(treeItem.label, treeItem);
-        }
-
-        this._loadedTreeItems.forEach((treeItem: TreeItem) =>
-        {
-            console.log(treeItem);
-        });
-        console.log("##################");
-
-
-        this._loadedFragments.forEach((treeItem: Fragment) =>
-        {
-            console.log(treeItem);
-        });
-        console.log("##################");
-
-    }
-
-    /**
-     * Deletes the TreeItem from the database
-     * @param label Label of TreeItem to be deleted
-     */
-    static deleteTreeItem(label: string | undefined): void
-    {
-        if(label !== undefined && Database._loadedTreeItems.has(label))
-        {
-            Database._loadedTreeItems.delete(label);
-        }
-
-    }
-
-    /**
-     * Replaces TreeItem with the same label as the given TreeItem
-     * @param treeItem TreeItem to replace
-     */
-    static updateTreeItem(treeItem: TreeItem | undefined): void
-    {
-        if(treeItem !== undefined && treeItem.label !== undefined && Database._loadedTreeItems.has(treeItem.label))
-        {
-            Database.deleteTreeItem(treeItem.label);
-            Database.addTreeItem(treeItem);
-        }
-    }
-
-    /**
-     * 
-     * @param label Returns the TreeItem with the given label
-     */
-    static getTreeItem(label: string | undefined): TreeItem | undefined
-    {
-        if(label !== undefined && this._loadedTreeItems.has(label))
-        {
-            return this._loadedTreeItems.get(label);
-        }
-    }
-
-    /**
-     * Returns list of TreeItems for given list of labels
-     * @param labels List of labels for TreeItems to be returned
-     */
-    static getTreeItems(labels?: (string|undefined)[] | undefined): TreeItem[] | undefined
-    {
-        if(labels !== undefined)
-        {
-            var treeItemList: TreeItem[] = [];
-            labels.forEach((element: string | undefined) =>
-            {
-                if(element !== undefined)
-                {
-                    var treeItem = Database.getTreeItem(element);
-                    if(treeItem !== undefined)
-                    {
-                        treeItemList.push(treeItem);
-                    }
-                }
-            });
-            return treeItemList;
-        }
-        else
-        {
-            return Array.from(this._loadedTreeItems.values());
-        }
-    }
-
-    static set loadedTreeItems(treeItems: TreeItem[])
-    {
-        this._loadedTreeItems.clear();
-        treeItems.forEach((treeItem: TreeItem) =>
-        {
-            if(treeItem.label !== undefined)
-            {
-                this._loadedTreeItems.set(treeItem.label, treeItem);
-            }
-        })
     }
 }

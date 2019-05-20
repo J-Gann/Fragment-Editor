@@ -9,7 +9,7 @@ export class TreeItem extends vscode.TreeItem
     */
 
     // Properties for a TreeItem (inherited by vscode.TreeItem)
-    // label: string;           // Naming of the TreeItem. Is the name of the tag for TreeItem of type 'tag' and the label of the Fragment for the TreeItem of type 'fragment'.
+    // label: string;           // Naming of the TreeItem.
     // contextValue: string;    // Destinction between type of 'tag' and 'fragment' of the TreeItem.
 
     // Properties for a tag TreeItem
@@ -17,8 +17,9 @@ export class TreeItem extends vscode.TreeItem
 
     // Properties for a fragment TreeItem
     private _tag: string | undefined;       // The label of a TreeItem of type 'tag' the TreeItem of type 'fragment' is assigned to.
+    private _fragment: string | undefined;
 
-    constructor(parameter: {label: string, contextValue: string, childs?: string[], tag?: string})
+    constructor(parameter: {label: string, contextValue: string, childs?: string[], tag?: string, fragment?: string})
     {
         super(parameter.label);
 
@@ -35,6 +36,7 @@ export class TreeItem extends vscode.TreeItem
                 this._childs = []
             }
             this._tag = undefined;
+            this._fragment = undefined;
             this.collapsibleState = 1;
             this.command = {command: "fragmentEditor.edittag", title: "Edit tag", arguments: [this]};
         }
@@ -48,6 +50,14 @@ export class TreeItem extends vscode.TreeItem
             else
             {
                 this._tag = undefined;
+            }
+            if(parameter.fragment !== undefined)
+            {
+                this._fragment = parameter.fragment;
+            }
+            else
+            {
+                this._fragment = undefined;
             }
             this.collapsibleState = 0;
             this.command = {command: "fragmentEditor.editFragment", title: "Edit Fragment", arguments: [this]};
@@ -67,7 +77,7 @@ export class TreeItem extends vscode.TreeItem
         else
         {
             console.log("[W] | [TreeItem | get childs]: Failed");
-            return undefined
+            return undefined;
         }
     }
 
@@ -108,6 +118,22 @@ export class TreeItem extends vscode.TreeItem
         }
     }
 
+    get fragment()
+    {
+        if(this.contextValue === "fragment")
+        {
+            return this._fragment;
+        }
+        else
+        {
+            console.log("[W] | [TreeItem | get fragment]: Failed for parameter: ");
+        }
+    }
+
+    /**
+     * Adds the given label to the list of chlds
+     * @param child Label of child
+     */
     addChild(child: string | undefined)
     {
         if(this.contextValue === "tag" && child !== undefined && this._childs !== undefined)
@@ -120,6 +146,10 @@ export class TreeItem extends vscode.TreeItem
         }
     }
 
+    /**
+     * Deletes the given label from the list of childs
+     * @param newChild Label of child
+     */
     removeChild(newChild: string | undefined)
     {
         if(this.contextValue === "tag" && newChild !== undefined && this._childs !== undefined)
