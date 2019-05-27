@@ -17,7 +17,7 @@ export class TreeItem extends vscode.TreeItem
 
     // Properties for a fragment TreeItem
     private _tag: string | undefined;       // The label of a TreeItem of type 'tag' the TreeItem of type 'fragment' is assigned to.
-    private _fragment: string | undefined;
+    private _fragment: string | undefined;  // The label of the corresponding fragment
 
     constructor(parameter: {label: string, contextValue: string, childs?: string[], tag?: string, fragment?: string})
     {

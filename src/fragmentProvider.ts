@@ -48,7 +48,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem>
                                     var newTag = new TreeItem({label: tag, contextValue: "tag"});
                                     Database.addTreeItem(newTag);
                                 }
-                                var newFragment = new TreeItem({label: fragment.label + " [TAG:" + tag.toUpperCase() + "]", contextValue: "fragment", tag: tag, fragment: fragment.label});
+                                var newFragment = new TreeItem({label: fragment.label + " [TAG:" + tag+ "]", contextValue: "fragment", tag: tag, fragment: fragment.label});
                                 Database.addTreeItem(newFragment);
                                 var tagTreeItem = Database.getTreeItem(tag);
                                 if(tagTreeItem !== undefined)

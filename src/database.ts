@@ -259,13 +259,6 @@ export class Database {
      */
     static getTreeItem(label: string | undefined): TreeItem | undefined
     {
-        console.log("############")
-        Array.from(this._loadedTreeItems.values()).forEach((treeItem: TreeItem) =>
-        {
-            console.log(treeItem);
-        });
-        
-
         if(label !== undefined && this._loadedTreeItems.has(label))
         {
             return this._loadedTreeItems.get(label);
