@@ -1,6 +1,136 @@
 import * as vscode from 'vscode';
 import { Fragment } from "./fragment";
 import { Database } from './database';
+import {PythonShell} from 'python-shell';
+import { FragmentProvider } from './fragmentProvider';
+var fs = require('fs');
+const filbert = require('filbert');
+var jp = require('jsonpath');
+export class PyPa
+{
+    /**
+     * Calculate a parametrized snippet of the code and return it
+     * @param code Code to parametrize
+     */
+    static parametrize(code: string): Promise<string> | undefined
+    {
+        let findPlaceholders = function(snippet: string): string[]
+        {
+            var parsedSnippet: JSON = filbert.parse(code,{locations: true});
+
+            var declarationsSnippet = jp.query(parsedSnippet, '$.body[?(@.type=="VariableDeclaration")].declarations[0].id');
+            var parametersSnippet = jp.query(parsedSnippet, '$..arguments[?(@.type=="Identifier")]');
+
+            var placeholders: string[] = [];
+
+            parametersSnippet.forEach((param: any) =>
+            {
+                var match = false;
+                declarationsSnippet.forEach((decl: any) =>
+                {
+                    if(decl.name === param.name)
+                    {
+                        match = true;
+                    }
+                });
+                if(!match)
+                {
+                    placeholders.push(param);
+                }
+            });
+            return placeholders;
+        }
+
+        let executePythonScript = function(placeholders: string[]): Promise<string> | undefined
+        {
+            var editor = vscode.window.activeTextEditor;
+            var document = editor!.document;
+            var uri = document.fileName;
+
+            var text = document.getText();
+
+            var offsetCodeIndex = text.indexOf(code);
+
+            var offsetCodeLines = 0;
+            for(var cnt = 0; cnt < offsetCodeIndex; cnt++)
+            {
+                if(text[cnt] === '\n')
+                {
+                    offsetCodeLines++;
+                }
+            }
+
+            placeholders.forEach((element: any) =>
+            {
+                var name = element.name;
+                var line = element.loc.start.line-1+offsetCodeLines;
+                var startColumn = element.loc.start.column;
+                var endColumn = element.loc.end.column;
+
+                var newText = "def typeDef(name, x):\n    print((name, type(x)))\n    return x\n";
+
+                for(var cnt = 0; cnt < text.length; cnt++)
+                {
+                    var ch = text[cnt];
+                    if(ch === '\n')
+                    {
+                        line--;
+                    }
+                    newText += ch;
+                    if(line === 0)
+                    {
+                        for(var cnt1 = 0; cnt1 < startColumn; cnt1++)
+                        {
+                            newText += text[cnt+cnt1+1];
+                        }
+
+                        newText += "typeDef(" + "'" + name + "', " + name + ")";
+
+                        for(var cnt2 = cnt+startColumn+2; cnt2 < text.length; cnt2++)
+                        {
+                            newText += text[cnt2];
+                        }
+                        break;
+                    }
+                }
+                text = newText;
+                console.log(text);
+            });
+
+            if(editor !== undefined)
+            {
+                return new Promise(resolve =>
+                {
+
+                    PythonShell.runString(text, {}, ((err, results) =>
+                    {
+                        try
+                        {
+                            if(err) {throw err;}
+                            if(results !== null && results !== undefined)
+                            {
+                                console.log(results.toString());
+                                resolve(results.toString());
+                            }
+                        }
+                        catch(err)
+                        {
+                            console.log(err);
+                            vscode.window.showWarningMessage("Code in active window not executable (quality of datatypes affected)");
+                        }
+                    }));
+                });
+            }
+            else
+            {
+                console.log("[E] | [PyPa | parametrize]: Editor undefined");
+                return;
+            }
+        };
+
+        return executePythonScript(findPlaceholders(code));
+    }
+}
 
 /**
  * Try to create a fragment out of existing fragments

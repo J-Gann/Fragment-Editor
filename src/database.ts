@@ -265,7 +265,7 @@ export class Database {
         }
         else
         {
-            console.log("[W] | [Database | getTreeItem]: Failed for label: " + label);
+            // console.log("[W] | [Database | getTreeItem]: Failed for label: " + label);
             return undefined;
         }
     }

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { Fragment } from "./fragment";
 import { Database } from './database';
 import { FragmentEditor } from './fragmentEditor';
-import { FOEF } from './parametrization';
+import { FOEF, PyPa } from './parametrization';
 import { TreeItem } from './treeItem';
 
 /**
@@ -13,10 +13,12 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem>
     private _fragmentEditor: FragmentEditor;
     private _onDidChangeTreeData: vscode.EventEmitter<TreeItem | undefined> = new vscode.EventEmitter<TreeItem | undefined>();
     readonly onDidChangeTreeData: vscode.Event<TreeItem | undefined> = this._onDidChangeTreeData.event;
+    static context: vscode.ExtensionContext;
 
     constructor(context: vscode.ExtensionContext)
     {
         this.createTreeStructure();
+        FragmentProvider.context = context;
         this._fragmentEditor = new FragmentEditor(context, this);
     }
 
@@ -180,6 +182,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem>
             else
             {  
                 var obj = FOEF.parametrize(text);
+                PyPa.parametrize(text);
                 var newFragment = new Fragment({...{label: label}, ...obj});
                 Database.addFragment(newFragment);
             }
