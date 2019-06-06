@@ -181,10 +181,16 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem>
             }
             else
             {  
-                var obj = FOEF.parametrize(text);
-                PyPa.parametrize(text);
-                var newFragment = new Fragment({...{label: label}, ...obj});
-                Database.addFragment(newFragment);
+                //var obj = FOEF.parametrize(text);
+                //var newFragment = new Fragment({...{label: label}, ...obj});
+                //Database.addFragment(newFragment);
+                PyPa.parametrize(text).then((obj)=>
+                {
+                    var newFragment = new Fragment({...{label: label}, ...obj});
+                    Database.addFragment(newFragment);
+                    this.refresh();
+                });
+
             }
             this.refresh();
         });

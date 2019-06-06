@@ -11,7 +11,7 @@ export class PyPa
      * Calculate a parametrized snippet of the code and return it with corresponding placeholders
      * @param code Code to parametrize
      */
-    static parametrize(snippet: string): Promise<string[]>
+    static parametrize(snippet: string): Promise<{}>
     {
         /**
          * Uses the parser filbert and jsonpath to search for undefined parameters inside the snippet
@@ -45,48 +45,62 @@ export class PyPa
             return placeholders;
         };
 
-        let insertPlaceholders = function(text: string, placeholders: Promise<string[]>)
+        let insertPlaceholders = function(code: string)
         {
-            var number = 0;
+            var placeholders = findPlaceholders(code);
 
-            placeholders.then(value => value.forEach((element: any) =>
+            var index = 0;
+
+            placeholders.forEach((placeholder: any) =>
             {
-                var name = element.name;
-                var line = element.loc.start.line - 1;
-                var startColumn = element.loc.start.column;
-                var endColumn = element.loc.end.column;
+                var placeholderList = findPlaceholders(code);
+                var name = placeholder.name;
 
-                var newText = "";
-
-                for(var cnt = 0; cnt < text.length; cnt++)
+                placeholderList.forEach((element: any) =>
                 {
-                    var ch = text[cnt];
-                    if(ch === '\n')
+                    if(element.name === name)
                     {
-                        line--;
+                        placeholder = element;;
                     }
-                    newText += ch;
+                });
+
+                var line = placeholder.loc.start.line - 1;
+                var startColumn = placeholder.loc.start.column;
+                var endColumn = placeholder.loc.end.column;
+
+                var newCode = "";
+                var cnt = 0;
+                var cnt_save = cnt;
+                for(var cnt = 0; cnt < code.length; cnt++)
+                {
                     if(line === 0)
                     {
                         break;
                     }
+                    if(code[cnt] === '\n')
+                    {
+                        line--;
+                    }
+                    newCode += code[cnt];
                 }
 
-                for(var cnt1 = 1; cnt1 <= startColumn; cnt1++)
+                cnt_save = cnt;
+
+                for(; cnt < cnt_save + startColumn; cnt++)
                 {
-                    newText += text[cnt + cnt1];
+                    newCode += code[cnt];
                 }
 
-                newText += "${" + number + ":" + name + "}";
+                newCode += "\"${" + index + ":" + name + "}\"";
 
-                for(var cnt2 = cnt + 1 + endColumn; cnt2 < text.length; cnt2++)
+                for(cnt = cnt_save + endColumn; cnt < code.length; cnt++)
                 {
-                    newText += text[cnt2];
+                    newCode += code[cnt];
                 }
-
-                text = newText;
-                number++;
-            }));
+                code = newCode;
+                index++
+            });
+            return code
         }
 
         let modifyPythonScript = function(code: string): string
@@ -96,22 +110,19 @@ export class PyPa
             if(editor !== undefined)
             {
                 var document = editor.document;
-                var selection = editor.selection;
 
                 var placeholders = findPlaceholders(code);
-                console.log(placeholders)
 
                 placeholders.forEach((placeholder: any) =>
                 {
-                    console.log(code)
                     var placeholderList = findPlaceholders(code);
                     var name = placeholder.name;
 
-                    placeholder = placeholderList.forEach((placeholder: any) =>
+                    placeholderList.forEach((element: any) =>
                     {
-                        if(placeholder.name === name)
+                        if(element.name === name)
                         {
-                            return placeholder;
+                            placeholder = element;;
                         }
                     });
 
@@ -119,50 +130,52 @@ export class PyPa
                     var startColumn = placeholder.loc.start.column;
                     var endColumn = placeholder.loc.end.column;
 
-                    console.log(line);
-
-                    var newText = "";
-
+                    var newCode = "";
+                    var cnt = 0;
+                    var cnt_save = cnt;
                     for(var cnt = 0; cnt < code.length; cnt++)
                     {
-                        var ch = code[cnt];
-                        if(ch === '\n')
-                        {
-                            line--;
-                        }
-                        newText += ch;
                         if(line === 0)
                         {
                             break;
                         }
+                        if(code[cnt] === '\n')
+                        {
+                            line--;
+                        }
+                        newCode += code[cnt];
                     }
 
-                    for(var cnt1 = 1; cnt1 <= startColumn; cnt1++)
+                    cnt_save = cnt;
+
+                    for(; cnt < cnt_save + startColumn; cnt++)
                     {
-                        newText += code[cnt + cnt1];
+                        newCode += code[cnt];
                     }
 
                     var properties = JSON.stringify({name: name, line: placeholder.loc.start.line, startColumn: placeholder.loc.start.column, endColumn: placeholder.loc.end.column});
 
-                    newText += "typeDef(" + properties + ", " + name + ")";
+                    newCode += "typeDef(" + properties + ", " + name + ")";
 
-                    for(var cnt2 = cnt + 1 + endColumn; cnt2 < code.length; cnt2++)
+                    for(cnt = cnt_save + endColumn; cnt < code.length; cnt++)
                     {
-                        newText += code[cnt2];
+                        newCode += code[cnt];
                     }
-
-                    code = newText;
-
+                    code = newCode;
                 });
 
-                //text = "def typeDef(properties, x):\n    print('{' + 'name: ' + str(properties['name']) + ' ,' + 'line: ' + str(properties['line']) + ' ,' + 'startColumn: ' + str(properties['startColumn']) + ' ,' + 'endColumn: ' + str(properties['endColumn']) + ' ,' + 'type: ' + str(type(x)) + '}')\n    return x\n" + text;
+                var typeDef = "def typeDef(properties, x):\n    print('{'  + '\\\"name\\\": ' + '\\\"' + str(properties['name']) + '\\\"' + ', ' + '\\\"type\\\": ' + '\\\"' + str(type(x)) + '\\\"' + '}')\n    return x\n";
+                
+                var selection = editor.selection;
+                var beginning = document.getText(new vscode.Range(new vscode.Position(0, 0), selection.start));
+                var end = document.getText(new vscode.Range(selection.end, new vscode.Position(document.lineCount-1, document.lineAt(document.lineCount-1).text.length)));
 
-                console.log(code);
+                code = typeDef + beginning + code + end;
             }
             return code;
         };
 
-        let executePythonScript = function(code: string): Promise<string[]>
+        let executePythonScript = function(code: string): Promise<{}>
         {
             return new Promise((resolve, reject) =>
             {
@@ -178,10 +191,10 @@ export class PyPa
                             }
                             if(results !== undefined && results !== null)
                             {
-                                var solution = results.toString().split('\n');
-                                solution.filter((value =>
+                                
+                                results = results.filter(value =>
                                 {
-                                    if(value.toString().match(/^\{name: .*,line: \d*,startColumn: \d*,endColumn: \d*,type: .*}\}$/))
+                                    if(value.match(/^\{"name": .*, "type": .*\}$/))
                                     {
                                         return true;
                                     }
@@ -189,11 +202,15 @@ export class PyPa
                                     {
                                         return false;
                                     }
-                                }));
+                                });
+                                var placeholders = ""
 
-                                console.log(solution);
-
-                                resolve(solution);
+                                results.forEach((res, index, array) =>
+                                {
+                                    res = JSON.parse(res)
+                                    placeholders += "${" + index + ":" + res.name + ":" + res.type + "}, ";
+                                });
+                                resolve({body: insertPlaceholders(snippet), placeholders: placeholders});
                             }
                         }
                         catch(err)
@@ -213,6 +230,8 @@ export class PyPa
             });
         };
         return executePythonScript(modifyPythonScript(snippet));
+
+
     }
 }
 

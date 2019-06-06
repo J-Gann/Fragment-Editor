@@ -115,7 +115,7 @@ export class FragmentEditor {
             <br><br><br>
             Scope: <input id="scope" type="text" value="${fragment.scope}">
             Domain: <input id="domain" type="text" value="${fragment.domain}">
-            Placeholders: <input id="placeholders" type="text" value="${fragment.placeholders}" disabled>
+            Placeholders: <input style="color:lightgrey;" id="placeholders" type="text" value="${fragment.placeholders}" disabled>
 
             <script>
                 const vscode = acquireVsCodeApi();
