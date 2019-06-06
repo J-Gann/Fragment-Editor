@@ -2,20 +2,24 @@ import * as vscode from 'vscode';
 import { Fragment } from "./fragment";
 import { Database } from './database';
 import {PythonShell} from 'python-shell';
-import { FragmentProvider } from './fragmentProvider';
 var fs = require('fs');
 const filbert = require('filbert');
 var jp = require('jsonpath');
 export class PyPa
 {
     /**
-     * Calculate a parametrized snippet of the code and return it
+     * Calculate a parametrized snippet of the code and return it with corresponding placeholders
      * @param code Code to parametrize
      */
-    static parametrize(code: string): Promise<string> | undefined
+    static parametrize(snippet: string): Promise<string[]>
     {
-        let findPlaceholders = function(snippet: string): string[]
+        /**
+         * Uses the parser filbert and jsonpath to search for undefined parameters inside the snippet
+         * @param snippet Selected code snippet
+         */
+        let findPlaceholders = function(code: string): string[]
         {
+            // Parsing the 
             var parsedSnippet: JSON = filbert.parse(code,{locations: true});
 
             var declarationsSnippet = jp.query(parsedSnippet, '$.body[?(@.type=="VariableDeclaration")].declarations[0].id');
@@ -39,35 +43,20 @@ export class PyPa
                 }
             });
             return placeholders;
-        }
+        };
 
-        let executePythonScript = function(placeholders: string[]): Promise<string> | undefined
+        let insertPlaceholders = function(text: string, placeholders: Promise<string[]>)
         {
-            var editor = vscode.window.activeTextEditor;
-            var document = editor!.document;
-            var uri = document.fileName;
+            var number = 0;
 
-            var text = document.getText();
-
-            var offsetCodeIndex = text.indexOf(code);
-
-            var offsetCodeLines = 0;
-            for(var cnt = 0; cnt < offsetCodeIndex; cnt++)
-            {
-                if(text[cnt] === '\n')
-                {
-                    offsetCodeLines++;
-                }
-            }
-
-            placeholders.forEach((element: any) =>
+            placeholders.then(value => value.forEach((element: any) =>
             {
                 var name = element.name;
-                var line = element.loc.start.line-1+offsetCodeLines;
+                var line = element.loc.start.line - 1;
                 var startColumn = element.loc.start.column;
                 var endColumn = element.loc.end.column;
 
-                var newText = "def typeDef(name, x):\n    print((name, type(x)))\n    return x\n";
+                var newText = "";
 
                 for(var cnt = 0; cnt < text.length; cnt++)
                 {
@@ -79,56 +68,151 @@ export class PyPa
                     newText += ch;
                     if(line === 0)
                     {
-                        for(var cnt1 = 0; cnt1 < startColumn; cnt1++)
-                        {
-                            newText += text[cnt+cnt1+1];
-                        }
-
-                        newText += "typeDef(" + "'" + name + "', " + name + ")";
-
-                        for(var cnt2 = cnt+startColumn+2; cnt2 < text.length; cnt2++)
-                        {
-                            newText += text[cnt2];
-                        }
                         break;
                     }
                 }
+
+                for(var cnt1 = 1; cnt1 <= startColumn; cnt1++)
+                {
+                    newText += text[cnt + cnt1];
+                }
+
+                newText += "${" + number + ":" + name + "}";
+
+                for(var cnt2 = cnt + 1 + endColumn; cnt2 < text.length; cnt2++)
+                {
+                    newText += text[cnt2];
+                }
+
                 text = newText;
-                console.log(text);
-            });
+                number++;
+            }));
+        }
+
+        let modifyPythonScript = function(code: string): string
+        {
+            var editor = vscode.window.activeTextEditor;
 
             if(editor !== undefined)
             {
-                return new Promise(resolve =>
-                {
+                var document = editor.document;
+                var selection = editor.selection;
 
-                    PythonShell.runString(text, {}, ((err, results) =>
+                var placeholders = findPlaceholders(code);
+                console.log(placeholders)
+
+                placeholders.forEach((placeholder: any) =>
+                {
+                    console.log(code)
+                    var placeholderList = findPlaceholders(code);
+                    var name = placeholder.name;
+
+                    placeholder = placeholderList.forEach((placeholder: any) =>
+                    {
+                        if(placeholder.name === name)
+                        {
+                            return placeholder;
+                        }
+                    });
+
+                    var line = placeholder.loc.start.line - 1;
+                    var startColumn = placeholder.loc.start.column;
+                    var endColumn = placeholder.loc.end.column;
+
+                    console.log(line);
+
+                    var newText = "";
+
+                    for(var cnt = 0; cnt < code.length; cnt++)
+                    {
+                        var ch = code[cnt];
+                        if(ch === '\n')
+                        {
+                            line--;
+                        }
+                        newText += ch;
+                        if(line === 0)
+                        {
+                            break;
+                        }
+                    }
+
+                    for(var cnt1 = 1; cnt1 <= startColumn; cnt1++)
+                    {
+                        newText += code[cnt + cnt1];
+                    }
+
+                    var properties = JSON.stringify({name: name, line: placeholder.loc.start.line, startColumn: placeholder.loc.start.column, endColumn: placeholder.loc.end.column});
+
+                    newText += "typeDef(" + properties + ", " + name + ")";
+
+                    for(var cnt2 = cnt + 1 + endColumn; cnt2 < code.length; cnt2++)
+                    {
+                        newText += code[cnt2];
+                    }
+
+                    code = newText;
+
+                });
+
+                //text = "def typeDef(properties, x):\n    print('{' + 'name: ' + str(properties['name']) + ' ,' + 'line: ' + str(properties['line']) + ' ,' + 'startColumn: ' + str(properties['startColumn']) + ' ,' + 'endColumn: ' + str(properties['endColumn']) + ' ,' + 'type: ' + str(type(x)) + '}')\n    return x\n" + text;
+
+                console.log(code);
+            }
+            return code;
+        };
+
+        let executePythonScript = function(code: string): Promise<string[]>
+        {
+            return new Promise((resolve, reject) =>
+            {
+                try
+                {
+                    PythonShell.runString(code, {}, ((err, results) =>
                     {
                         try
                         {
-                            if(err) {throw err;}
-                            if(results !== null && results !== undefined)
+                            if(err)
                             {
-                                console.log(results.toString());
-                                resolve(results.toString());
+                                throw err;
+                            }
+                            if(results !== undefined && results !== null)
+                            {
+                                var solution = results.toString().split('\n');
+                                solution.filter((value =>
+                                {
+                                    if(value.toString().match(/^\{name: .*,line: \d*,startColumn: \d*,endColumn: \d*,type: .*}\}$/))
+                                    {
+                                        return true;
+                                    }
+                                    else
+                                    {
+                                        return false;
+                                    }
+                                }));
+
+                                console.log(solution);
+
+                                resolve(solution);
                             }
                         }
                         catch(err)
                         {
-                            console.log(err);
+                            console.log("[E] | [PyPa | parametrize]:\n" + err);
                             vscode.window.showWarningMessage("Code in active window not executable (quality of datatypes affected)");
+                            reject();
                         }
                     }));
-                });
-            }
-            else
-            {
-                console.log("[E] | [PyPa | parametrize]: Editor undefined");
-                return;
-            }
+                }
+                catch(err)
+                {
+                    console.log("[E] | [PyPa | parametrize]:\n" + err);
+                    vscode.window.showWarningMessage("Failure executing the python script (quality of datatypes affected)");
+                    reject();
+                }
+            });
         };
-
-        return executePythonScript(findPlaceholders(code));
+        return executePythonScript(modifyPythonScript(snippet));
     }
 }
 
