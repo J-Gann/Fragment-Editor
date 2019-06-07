@@ -14,20 +14,7 @@
 	],
 	"main": "./out/extension.js",
 	"contributes": {
-		"keybindings": [
-			{
-				"command": "fragmentEditor.addEntry",
-				"key": "ctrl+shift+n"
-			},
-			{
-				"command": "fragmentEditor.reset",
-				"key": "ctrl+shift+r"
-			},
-			{
-				"command": "fragmentEditor.filter",
-				"key": "ctrl+shift+f"
-			}
-		],
+		"keybindings": [],
 		"viewsContainers": {
 			"activitybar": [
 				{
@@ -47,51 +34,34 @@
 		},
 		"commands": [
 			{
-				"command": "fragmentEditor.addEntry",
-				"title": "Add Fragment From Selection",
-				"icon": "media/add.png"
+				"command": "fragmentEditor.addFragment",
+				"title": "Add Fragment",
+				"icon": "media/fragment.png"
 			},
 			{
-				"command": "fragmentEditor.deleteEntry",
+				"command": "fragmentEditor.deleteTreeItem",
 				"title": "Delete"
-			},
-			{
-				"command": "fragmentEditor.filter",
-				"title": "Filter",
-				"icon": "media/filter.png"
-			},
-			{
-				"command": "fragmentEditor.reset",
-				"title": "Reset",
-				"icon": "media/reset.png"
 			}
 		],
 		"menus": {
 			"editor/context": [
 				{
-					"command": "fragmentEditor.addEntry",
+					"command": "fragmentEditor.addFragment",
 					"group": "9_cutcopypaste",
 					"when": "editorHasSelection"
 				}
 			],
 			"view/title": [
 				{
-					"command": "fragmentEditor.addEntry",
-					"group": "navigation"
-				},
-				{
-					"command": "fragmentEditor.filter",
-					"group": "navigation"
-				},
-				{
-					"command": "fragmentEditor.reset",
+					"command": "fragmentEditor.addFragment",
 					"group": "navigation"
 				}
 			],
 			"view/item/context": [
 				{
-					"command": "fragmentEditor.deleteEntry",
-					"group": "inline"
+					"command": "fragmentEditor.deleteTreeItem",
+					"group": "inline",
+					"when": "viewItem == fragment"
 				}
 			]
 		}
@@ -107,9 +77,13 @@
 		"@types/mocha": "^2.2.42",
 		"@types/node": "^10.12.21",
 		"@types/sql.js": "0.0.29",
+		"filbert": "^0.1.20",
+		"jsonpath": "^1.0.2",
+		"python-shell": "^1.0.7",
 		"sql.js": "^0.5.0",
 		"tslint": "^5.12.1",
 		"typescript": "^3.3.1",
 		"vscode": "^1.1.28"
-	}
+	},
+	"dependencies": {}
 }

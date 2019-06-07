@@ -1,6 +1,291 @@
 import * as vscode from 'vscode';
 import { Fragment } from "./fragment";
 import { Database } from './database';
+import {PythonShell} from 'python-shell';
+var fs = require('fs');
+const filbert = require('filbert');
+var jp = require('jsonpath');
+export class PyPa
+{
+    /**
+     * Return a parametrized code snippet along with corresponding placeholders including datatypes
+     * @param code Code snippet to parametrize
+     * @description This function tries to run a modified version of the python program which is currently selected in the editor by a python interpreter called 'python-shell'.
+     * The program gets modified in a way, that for every variable which is used in the code snippet but is undefined in the code snippet gets replaced by a special function.
+     * This extraction of placeholders is implemented by parsing the code snippet with 'filbert' and searching for declarations and parameters using 'jsonpath'.
+     * The inserted function has the variable, which it replaces, as parameter and also returns it (=> The functionality of the program does not change).
+     * The function also prints out the 'typeof(variable)' in order to retrieve the possible datatypes of the variable.
+     * The outputs then are collected and processed in order to return them in the correct format.
+     * @
+     */
+    static parametrize(snippet: string): Promise<{}>
+    {
+        /**
+         * Uses the parser filbert and jsonpath to search for undefined parameters inside the snippet
+         * @param snippet Selected code snippet
+         */
+        let findPlaceholders = function(code: string): string[]
+        {
+            // Parsing the code snippet using 'filbert' (locations of the objects should be included)
+            var parsedSnippet: JSON = filbert.parse(code,{locations: true});
+
+            // Search for all declarations in the parsed code snippet using 'jsonpath'
+            var declarationsSnippet = jp.query(parsedSnippet, '$.body[?(@.type=="VariableDeclaration")].declarations[0].id');
+            // Search for all parameters in the parsed code snippet using 'jsonpath'
+            var parametersSnippet = jp.query(parsedSnippet, '$..arguments[?(@.type=="Identifier")]');
+            // List of all found placeholders
+            var placeholders: string[] = [];
+            // Search for all parameters of the code snippet which were not declared in the code snippet
+            parametersSnippet.forEach((param: any) =>
+            {
+                var match = false;
+                declarationsSnippet.forEach((decl: any) =>
+                {
+                    if(decl.name === param.name)
+                    {
+                        match = true;
+                    }
+                });
+                if(!match)
+                {
+                    placeholders.push(param);
+                }
+            });
+            return placeholders;
+        };
+
+        /**
+         * Replaces the variable of each placeholder by a standardized format: ${number:variable}
+         * @param code Code snippet where variables of placeholders should be replaced
+         */
+        let insertPlaceholders = function(code: string)
+        {
+            // List of all placeholders found in the code snippet
+            var placeholders = findPlaceholders(code);
+            // Number of variables of paceholders that have already been replaced
+            var index = 0;
+            // Execute the replacement for each placeholder seperately
+            placeholders.forEach((placeholder: any) =>
+            {
+                // Again, calculate all placeholders of the code snippet (by iteratively changing the code,
+                // the location of the remaining variables can change -> therefore placeholders have to be calculated again)
+                var placeholderList = findPlaceholders(code);
+                // Save the name of the current placeholder
+                var name = placeholder.name;
+                // Look through the recent list of placeholders and replace the current placeholder by the on in the list with the same name
+                placeholderList.forEach((element: any) =>
+                {
+                    if(element.name === name)
+                    {
+                        placeholder = element;;
+                    }
+                });
+
+                // Extract position metrics from the placeholder
+                var line = placeholder.loc.start.line - 1;
+                var startColumn = placeholder.loc.start.column;
+                var endColumn = placeholder.loc.end.column;
+
+                // Define some helping variables
+                var newCode = "";
+                var cnt = 0;
+                var cnt_save = cnt;
+                // Count the number of characters until the line of the placeholder (in order to access the characters of the placeholder by index of the code snippet)
+                // While counting, append all characters to 'newCode' which in the end should contain the additional standardized placeholder
+                for(var cnt = 0; cnt < code.length; cnt++)
+                {
+                    if(line === 0)
+                    {
+                        break;
+                    }
+                    if(code[cnt] === '\n')
+                    {
+                        line--;
+                    }
+                    newCode += code[cnt];
+                }
+
+                cnt_save = cnt;
+                // Appent the characters of the line until the first character of the placeholder to 'newCode'
+                for(; cnt < cnt_save + startColumn; cnt++)
+                {
+                    newCode += code[cnt];
+                }
+
+                // Insert the standardized placeholder ("##-o-## is going to be deleted in the end but is necessary for the parser to work
+                // -> The inserted placeholder gets recognized as string insted of a faulty syntax)
+                newCode += "\"##-o-##${" + index + ":" + name + "}##-o-##\"";
+
+                // Append the characters after the placeholder until the end to 'newCode'
+                for(cnt = cnt_save + endColumn; cnt < code.length; cnt++)
+                {
+                    newCode += code[cnt];
+                }
+                code = newCode;
+                index++;
+            });
+            // Delete the cryptic symbols
+            code = code.replace(/"##-o-##/g, "");
+            code = code.replace(/##-o-##"/g, "");
+            return code;
+        }
+
+        /**
+         * This function injects code into the code snippet and replaces placeholders by a function in order to be able to retrieve the datatypes of the placeholders
+         * @param code Code snippet which should be modified
+         */
+        let modifyPythonScript = function(code: string): string
+        {
+            // Save the current editor
+            var editor = vscode.window.activeTextEditor;
+
+            if(editor !== undefined)
+            {
+                // Save the currently active document (sould be the same as the document where the selection of the code snippet took place)
+                var document = editor.document;
+                // Save list of placeholders found in the code snippet
+                var placeholders = findPlaceholders(code);
+                // Execute the replacement for each placeholder seperately
+                placeholders.forEach((placeholder: any) =>
+                {
+                    // Again, calculate all placeholders of the code snippet (by iteratively changing the code,
+                    // the location of the remaining variables can change -> therefore placeholders have to be calculated again)
+                    var placeholderList = findPlaceholders(code);
+                    // Save the name of the current placeholder
+                    var name = placeholder.name;
+                    // Look through the recent list of placeholders and replace the current placeholder by the on in the list with the same name
+                    placeholderList.forEach((element: any) =>
+                    {
+                        if(element.name === name)
+                        {
+                            placeholder = element;
+                        }
+                    });
+
+                    // Extract position metrics from the placeholder
+                    var line = placeholder.loc.start.line - 1;
+                    var startColumn = placeholder.loc.start.column;
+                    var endColumn = placeholder.loc.end.column;
+
+                    // Define some helping variables
+                    var newCode = "";
+                    var cnt = 0;
+                    var cnt_save = cnt;
+                    // Count the number of characters until the line of the placeholder (in order to access the characters of the placeholder by index of the code snippet)
+                    // While counting, append all characters to 'newCode' which in the end should contain the additional standardized placeholder
+                    for(var cnt = 0; cnt < code.length; cnt++)
+                    {
+                        if(line === 0)
+                        {
+                            break;
+                        }
+                        if(code[cnt] === '\n')
+                        {
+                            line--;
+                        }
+                        newCode += code[cnt];
+                    }
+
+                    cnt_save = cnt;
+                    // Appent the characters of the line until the first character of the placeholder to 'newCode'
+                    for(; cnt < cnt_save + startColumn; cnt++)
+                    {
+                        newCode += code[cnt];
+                    }
+
+                    // properties of the current placeholder as a object
+                    var properties = JSON.stringify({name: name});
+
+                    // Insert the special function with appropriate parameters
+                    newCode += "typeDef(" + properties + ", " + name + ")";
+
+                    // Append the characters after the placeholder until the end to 'newCode'
+                    for(cnt = cnt_save + endColumn; cnt < code.length; cnt++)
+                    {
+                        newCode += code[cnt];
+                    }
+                    code = newCode;
+                });
+
+                // Define the special function
+                var typeDef = "def typeDef(properties, x):\n    print('{'  + '\\\"name\\\": ' + '\\\"' + str(properties['name']) + '\\\"' + ', ' + '\\\"type\\\": ' + '\\\"' + str(type(x)) + '\\\"' + '}')\n    return x\n";
+                
+                // Split the document in code before and after the code snippet
+                var selection = editor.selection;
+                var beginning = document.getText(new vscode.Range(new vscode.Position(0, 0), selection.start));
+                var end = document.getText(new vscode.Range(selection.end, new vscode.Position(document.lineCount-1, document.lineAt(document.lineCount-1).text.length)));
+
+                // Stick all pieces together
+                code = typeDef + beginning + code + end;
+            }
+            return code;
+        };
+
+        /**
+         * Tries to execute python code and return the resulting parametrization
+         * @param code Code to be executed
+         */
+        let executePythonScript = function(code: string): Promise<{}>
+        {
+            // Return a promise of the solution
+            return new Promise((resolve, reject) =>
+            {
+                try
+                {
+                    // Execute the python code by using 'python-shell'. All prints of the python code during executionare saved in the variable 'results'
+                    PythonShell.runString(code, {}, ((err, results) =>
+                    {
+                        try
+                        {
+                            if(err)
+                            {
+                                throw err;
+                            }
+                            if(results !== undefined && results !== null)
+                            {
+                                // Filter all the possible prints by the format of our placeholders
+                                results = results.filter(value =>
+                                {
+                                    if(value.match(/^\{"name": .*, "type": .*\}$/))
+                                    {
+                                        return true;
+                                    }
+                                    else
+                                    {
+                                        return false;
+                                    }
+                                });
+                                var placeholders = "";
+                                // Bring the placeholders in a standardized format
+                                results.forEach((res, index, array) =>
+                                {
+                                    res = JSON.parse(res)
+                                    placeholders += "${" + index + ":" + res.name + ":" + res.type + "}, ";
+                                });
+                                // Deliver the promised parametrization
+                                resolve({body: insertPlaceholders(snippet), placeholders: placeholders});
+                            }
+                        }
+                        catch(err)
+                        {
+                            console.log("[E] | [PyPa | parametrize]:\n" + err);
+                            vscode.window.showWarningMessage("Code in active window not executable (quality of datatypes affected)");
+                            reject();
+                        }
+                    }));
+                }
+                catch(err)
+                {
+                    console.log("[E] | [PyPa | parametrize]:\n" + err);
+                    vscode.window.showWarningMessage("Failure executing the python script (quality of datatypes affected)");
+                    reject();
+                }
+            });
+        };
+        // Call all the necessarry functions
+        return executePythonScript(modifyPythonScript(snippet));
+    }
+}
 
 /**
  * Try to create a fragment out of existing fragments
