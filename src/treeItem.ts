@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { Database } from "./database";
+import {Database} from "./database";
 
 export class TreeItem extends vscode.TreeItem
 {
@@ -13,11 +13,11 @@ export class TreeItem extends vscode.TreeItem
     // contextValue: string;    // Destinction between type of 'tag' and 'fragment' of the TreeItem.
 
     // Properties for a tag TreeItem
-    private _childs: string[] | undefined;  // Labels of TreeItems that are childs of the tag. Only TreeItemy of type 'fragment' can be a child.
+    private _childs: string[]|undefined; // Labels of TreeItems that are childs of the tag. Only TreeItemy of type 'fragment' can be a child.
 
     // Properties for a fragment TreeItem
-    private _tag: string | undefined;       // The label of a TreeItem of type 'tag' the TreeItem of type 'fragment' is assigned to.
-    private _fragment: string | undefined;  // The label of the corresponding fragment
+    private _tag: string|undefined;      // The label of a TreeItem of type 'tag' the TreeItem of type 'fragment' is assigned to.
+    private _fragment: string|undefined; // The label of the corresponding fragment
 
     constructor(parameter: {label: string, contextValue: string, childs?: string[], tag?: string, fragment?: string})
     {
@@ -25,9 +25,9 @@ export class TreeItem extends vscode.TreeItem
 
         this.contextValue = parameter.contextValue;
 
-        if(this.contextValue === "tag")
+        if (this.contextValue === "tag")
         {
-            if(parameter.childs !== undefined)
+            if (parameter.childs !== undefined)
             {
                 this._childs = parameter.childs;
             }
@@ -38,12 +38,12 @@ export class TreeItem extends vscode.TreeItem
             this._tag = undefined;
             this._fragment = undefined;
             this.collapsibleState = 1;
-            this.command = {command: "fragmentEditor.edittag", title: "Edit tag", arguments: [this]};
+            this.command = {command : "fragmentEditor.edittag", title : "Edit tag", arguments : [ this ]};
         }
-        else if(this.contextValue === "fragment")
+        else if (this.contextValue === "fragment")
         {
             this._childs = undefined;
-            if(parameter.tag !== undefined)
+            if (parameter.tag !== undefined)
             {
                 this._tag = parameter.tag;
             }
@@ -51,7 +51,7 @@ export class TreeItem extends vscode.TreeItem
             {
                 this._tag = undefined;
             }
-            if(parameter.fragment !== undefined)
+            if (parameter.fragment !== undefined)
             {
                 this._fragment = parameter.fragment;
             }
@@ -60,7 +60,7 @@ export class TreeItem extends vscode.TreeItem
                 this._fragment = undefined;
             }
             this.collapsibleState = 0;
-            this.command = {command: "fragmentEditor.editFragment", title: "Edit Fragment", arguments: [this]};
+            this.command = {command : "fragmentEditor.editFragment", title : "Edit Fragment", arguments : [ this ]};
         }
         else
         {
@@ -68,9 +68,9 @@ export class TreeItem extends vscode.TreeItem
         }
     }
 
-    get childs(): string[] | undefined
+    get childs(): string[]|undefined
     {
-        if(this.contextValue === "tag" && this._childs !== undefined)
+        if (this.contextValue === "tag" && this._childs !== undefined)
         {
             return this._childs;
         }
@@ -81,9 +81,9 @@ export class TreeItem extends vscode.TreeItem
         }
     }
 
-    set childs(childs: string[] | undefined)
+    set childs(childs: string[]|undefined)
     {
-        if(this.contextValue === "tag" && childs !== undefined)
+        if (this.contextValue === "tag" && childs !== undefined)
         {
             this._childs = childs;
         }
@@ -93,9 +93,9 @@ export class TreeItem extends vscode.TreeItem
         }
     }
 
-    get tag(): string | undefined
+    get tag(): string|undefined
     {
-        if(this.contextValue === "fragment")
+        if (this.contextValue === "fragment")
         {
             return this._tag;
         }
@@ -106,9 +106,9 @@ export class TreeItem extends vscode.TreeItem
         }
     }
 
-    set tag(tag: string | undefined)
+    set tag(tag: string|undefined)
     {
-        if(this.contextValue === "fragment" && tag !== undefined)
+        if (this.contextValue === "fragment" && tag !== undefined)
         {
             this._tag = tag;
         }
@@ -120,7 +120,7 @@ export class TreeItem extends vscode.TreeItem
 
     get fragment()
     {
-        if(this.contextValue === "fragment")
+        if (this.contextValue === "fragment")
         {
             return this._fragment;
         }
@@ -134,9 +134,9 @@ export class TreeItem extends vscode.TreeItem
      * Adds the given label to the list of chlds
      * @param child Label of child
      */
-    addChild(child: string | undefined)
+    addChild(child: string|undefined)
     {
-        if(this.contextValue === "tag" && child !== undefined && this._childs !== undefined)
+        if (this.contextValue === "tag" && child !== undefined && this._childs !== undefined)
         {
             this._childs.push(child);
         }
@@ -150,14 +150,13 @@ export class TreeItem extends vscode.TreeItem
      * Deletes the given label from the list of childs
      * @param newChild Label of child
      */
-    removeChild(newChild: string | undefined)
+    removeChild(newChild: string|undefined)
     {
-        if(this.contextValue === "tag" && newChild !== undefined && this._childs !== undefined)
+        if (this.contextValue === "tag" && newChild !== undefined && this._childs !== undefined)
         {
             var newChilds: string[] = [];
-            this._childs.forEach((child: string) =>
-            {
-                if(child !== newChild)
+            this._childs.forEach((child: string) => {
+                if (child !== newChild)
                 {
                     newChilds.push(child);
                 }

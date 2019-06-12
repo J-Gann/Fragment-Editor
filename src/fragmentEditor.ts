@@ -1,16 +1,18 @@
-import { Fragment } from "./fragment";
+import {Fragment} from "./fragment";
 import * as vscode from 'vscode';
-import { Database } from "./database";
-import { FragmentProvider } from "./fragmentProvider";
-import { FOEF } from "./parametrization";
+import {Database} from "./database";
+import {FragmentProvider} from "./fragmentProvider";
+import {FOEF} from "./parametrization";
 
-export class FragmentEditor {
+export class FragmentEditor
+{
     panel: any;
     context: vscode.ExtensionContext;
     fragmentProvider: FragmentProvider;
-    fragment: Fragment |undefined;
+    fragment: Fragment|undefined;
 
-    constructor(context: vscode.ExtensionContext, fragmentProvider: FragmentProvider) {
+    constructor(context: vscode.ExtensionContext, fragmentProvider: FragmentProvider)
+    {
         this.context = context;
         this.fragmentProvider = fragmentProvider;
         this.fragment = undefined;
@@ -23,43 +25,37 @@ export class FragmentEditor {
             "",
             vscode.ViewColumn.One,
             {
-                enableScripts: true
-            }
-        );
+                enableScripts : true
+            });
 
-        this.panel.onDidDispose(() =>
-        {
+        this.panel.onDidDispose(() => {
             this.panel = undefined;
         });
 
-        this.panel.webview.onDidReceiveMessage((message: any) =>
-        {
-            switch(message.command)
+        this.panel.webview.onDidReceiveMessage((message: any) => {
+            switch (message.command)
             {
-                case 'cancel':
-                    this.panel.dispose();
-                    this.panel.onDidDispose();
-                    return;
-                case 'submit':
-                    var newFragment = new Fragment({label: message.text.label, prefix: message.text.prefix, scope: message.text.scope, body: message.text.body, description: message.text.description, keywords: message.text.keywords, tags: message.text.tags, domain: message.text.domain, placeholders: message.text.placeholders});
-                    Database.updateFragment(newFragment);
-                    this.fragmentProvider.refresh();
-                    this.panel.dispose();
-                    this.panel.onDidDispose();
-                    return;
-                case 'parametrize':
-                    this.panel.postMessage({command: 'parametrize', text: FOEF.parametrize(message.text)});
-                    return;
-                }
-            },
-            undefined,
-            this.context.subscriptions
-          );
+            case 'cancel':
+                this.panel.dispose();
+                this.panel.onDidDispose();
+                return;
+            case 'submit':
+                var newFragment = new Fragment({label : message.text.label, prefix : message.text.prefix, scope : message.text.scope, body : message.text.body, description : message.text.description, keywords : message.text.keywords, tags : message.text.tags, domain : message.text.domain, placeholders : message.text.placeholders});
+                Database.updateFragment(newFragment);
+                this.fragmentProvider.refresh();
+                this.panel.dispose();
+                this.panel.onDidDispose();
+                return;
+            case 'parametrize':
+                this.panel.postMessage({command : 'parametrize', text : FOEF.parametrize(message.text)});
+                return;
+            }
+        }, undefined, this.context.subscriptions);
     }
 
-    showFragment(fragment: Fragment | undefined)
+    showFragment(fragment: Fragment|undefined)
     {
-        if(fragment === undefined)
+        if (fragment === undefined)
         {
             return;
         }
@@ -68,13 +64,13 @@ export class FragmentEditor {
         {
             this.createPanel();
         }
-        
+
         this.panel.title = fragment.label;
 
         const path = require("path");
         const onDiskPath = vscode.Uri.file(path.join(this.context.extensionPath, 'external/materialize', 'materialstyle.css'));
-    
-        const style = onDiskPath.with({ scheme: 'vscode-resource' });
+
+        const style = onDiskPath.with({scheme : 'vscode-resource'});
 
         this.panel.webview.html = this.getWebviewContent(fragment, style);
         this.panel.reveal();
@@ -82,13 +78,14 @@ export class FragmentEditor {
 
     onDelete(label: string)
     {
-        if(this.panel.title === label)
+        if (this.panel.title === label)
         {
             this.panel.dispose();
         }
     }
 
-    private getWebviewContent(fragment: Fragment, style: vscode.Uri) {
+    private getWebviewContent(fragment: Fragment, style: vscode.Uri)
+    {
         return `<!DOCTYPE html>
         <html lang="de">
         <head>
@@ -160,5 +157,5 @@ export class FragmentEditor {
 
           </body>
           </html>`;
-      }
+    }
 }

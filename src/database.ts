@@ -1,10 +1,11 @@
-import { Fragment } from "./fragment";
+import {Fragment} from "./fragment";
 import sql = require('sql.js');
 import fs = require("fs");
-import { TreeItem } from "./treeItem";
+import {TreeItem} from "./treeItem";
 import * as vscode from 'vscode';
 
-export class Database {
+export class Database
+{
     private static _fragmentDatabase: any;
     private static _fragmentDirectory: string;
     private static _loadedFragments: Map<string, Fragment>;
@@ -12,7 +13,7 @@ export class Database {
 
     constructor(path: string)
     {
-        Database._fragmentDirectory= path;
+        Database._fragmentDirectory = path;
         Database.createFragmentDatabase();
         Database._loadedFragments = new Map();
         Database.loadFragments();
@@ -21,12 +22,13 @@ export class Database {
 
     static createFragmentDatabase(): void
     {
-        if(!fs.existsSync(Database._fragmentDirectory))
+        if (!fs.existsSync(Database._fragmentDirectory))
         {
             fs.mkdirSync(Database._fragmentDirectory);
         }
 
-        if (!fs.existsSync(Database._fragmentDirectory + "/fragments.fragmentDatabase")) {
+        if (!fs.existsSync(Database._fragmentDirectory + "/fragments.fragmentDatabase"))
+        {
             const bufferfragmentDatabase = new sql.Database();
             const data = bufferfragmentDatabase.export();
             const buffer = Buffer.from(data);
@@ -57,7 +59,7 @@ export class Database {
             var tags = element[6];
             var domain = element[7];
             var placeholders = element[8];
-            var newFragment = new Fragment({label: label, prefix: prefix, scope: scope, body: body, description: description, keywords: keywords, tags: tags, domain: domain, placeholders: placeholders});
+            var newFragment = new Fragment({label : label, prefix : prefix, scope : scope, body : body, description : description, keywords : keywords, tags : tags, domain : domain, placeholders : placeholders});
             Database._loadedFragments.set(label, newFragment);
         });
     }
@@ -80,17 +82,16 @@ export class Database {
      */
     static getFragments(labels?: (string|undefined)[]): Fragment[]
     {
-        if(labels !== undefined)
+        if (labels !== undefined)
         {
             var fragments: Fragment[] = [];
-            labels.forEach((label: string|undefined) =>
-            {
+            labels.forEach((label: string|undefined) => {
                 var occuredLabels: string[] = [];
-                if(label !== undefined && !occuredLabels.includes(label))
+                if (label !== undefined && !occuredLabels.includes(label))
                 {
                     occuredLabels.push(label);
                     var fragment = Database._loadedFragments.get(label);
-                    if(fragment !== undefined)
+                    if (fragment !== undefined)
                     {
                         fragments.push(fragment);
                     }
@@ -108,10 +109,10 @@ export class Database {
      * Return the Fragment with the given label
      * @param label Label of the Fragment
      */
-    static getFragment(label: string): Fragment | undefined
+    static getFragment(label: string): Fragment|undefined
     {
         var fragment = Database._loadedFragments.get(label);
-        if(fragment !== undefined)
+        if (fragment !== undefined)
         {
             return fragment;
         }
@@ -126,9 +127,9 @@ export class Database {
      * Adds the given Fragment to the Database
      * @param fragment Fragment to be added
      */
-    static addFragment(fragment: Fragment | undefined): boolean
+    static addFragment(fragment: Fragment|undefined): boolean
     {
-        if(fragment === undefined || Database._loadedFragments.has(fragment.label))
+        if (fragment === undefined || Database._loadedFragments.has(fragment.label))
         {
             console.log("[W] | [Database | addFragment]: Failed for fragment: " + fragment);
             return false;
@@ -136,7 +137,7 @@ export class Database {
         else
         {
             Database._loadedFragments.set(fragment.label, fragment);
-            Database._fragmentDatabase.run("INSERT INTO fragments VALUES (?,?,?,?,?,?,?,?,?,?)", [fragment.label, fragment.prefix, fragment.scope, fragment.body, fragment.description, fragment.keywords, fragment.tags, fragment.domain, fragment.placeholders,fragment.snippet]);
+            Database._fragmentDatabase.run("INSERT INTO fragments VALUES (?,?,?,?,?,?,?,?,?,?)", [ fragment.label, fragment.prefix, fragment.scope, fragment.body, fragment.description, fragment.keywords, fragment.tags, fragment.domain, fragment.placeholders, fragment.snippet ]);
             Database.persist();
             return true;
         }
@@ -146,12 +147,12 @@ export class Database {
      * Delete a Fragment from the Database
      * @param label Label of Fragment
      */
-    static deleteFragment(label: string | undefined) : boolean
+    static deleteFragment(label: string|undefined): boolean
     {
-        if(label !== undefined && Database._loadedFragments.has(label))
+        if (label !== undefined && Database._loadedFragments.has(label))
         {
             Database._loadedFragments.delete(label);
-            Database._fragmentDatabase.run("DELETE FROM fragments WHERE label=?", [label]);
+            Database._fragmentDatabase.run("DELETE FROM fragments WHERE label=?", [ label ]);
             Database.persist();
             return true;
         }
@@ -166,12 +167,12 @@ export class Database {
      * Replace a Fragment with the same label as the given Fragment
      * @param fragment Fragment as it should be in the Database
      */
-    static updateFragment(fragment: Fragment |undefined): boolean
+    static updateFragment(fragment: Fragment|undefined): boolean
     {
-        if(fragment !== undefined && Database._loadedFragments.get(fragment.label) !== undefined)
+        if (fragment !== undefined && Database._loadedFragments.get(fragment.label) !== undefined)
         {
             Database._loadedFragments.set(fragment.label, fragment);
-            Database._fragmentDatabase.run("UPDATE fragments SET prefix=? , scope=?, body=?, description=?, keywords=?, tags=?, domain=?, placeholders=? WHERE label=?", [fragment.prefix, fragment.scope, fragment.body, fragment.description, fragment.keywords, fragment.tags, fragment.domain, fragment.placeholders, fragment.label]);
+            Database._fragmentDatabase.run("UPDATE fragments SET prefix=? , scope=?, body=?, description=?, keywords=?, tags=?, domain=?, placeholders=? WHERE label=?", [ fragment.prefix, fragment.scope, fragment.body, fragment.description, fragment.keywords, fragment.tags, fragment.domain, fragment.placeholders, fragment.label ]);
             Database.persist();
             return true;
         }
@@ -190,9 +191,8 @@ export class Database {
     static set loadedTreeItems(treeItems: TreeItem[])
     {
         this._loadedTreeItems.clear();
-        treeItems.forEach((treeItem: TreeItem) =>
-        {
-            if(treeItem.label !== undefined)
+        treeItems.forEach((treeItem: TreeItem) => {
+            if (treeItem.label !== undefined)
             {
                 this._loadedTreeItems.set(treeItem.label, treeItem);
             }
@@ -203,9 +203,9 @@ export class Database {
      * Adds the TreeItem to the database
      * @param treeItem TreeItem to be added
      */
-    static addTreeItem(treeItem: TreeItem | undefined): boolean
+    static addTreeItem(treeItem: TreeItem|undefined): boolean
     {
-        if(treeItem !== undefined && treeItem.label !== undefined && !this._loadedTreeItems.has(treeItem.label))
+        if (treeItem !== undefined && treeItem.label !== undefined && !this._loadedTreeItems.has(treeItem.label))
         {
             this._loadedTreeItems.set(treeItem.label, treeItem);
             return true;
@@ -221,9 +221,9 @@ export class Database {
      * Deletes the TreeItem from the database
      * @param label Label of TreeItem to be deleted
      */
-    static deleteTreeItem(label: string | undefined): boolean
+    static deleteTreeItem(label: string|undefined): boolean
     {
-        if(label !== undefined && Database._loadedTreeItems.has(label))
+        if (label !== undefined && Database._loadedTreeItems.has(label))
         {
             Database._loadedTreeItems.delete(label);
             return true;
@@ -239,9 +239,9 @@ export class Database {
      * Replaces TreeItem with the same label as the given TreeItem
      * @param treeItem TreeItem as it should be in the Database
      */
-    static updateTreeItem(treeItem: TreeItem | undefined): boolean
+    static updateTreeItem(treeItem: TreeItem|undefined): boolean
     {
-        if(treeItem !== undefined && treeItem.label !== undefined && Database._loadedTreeItems.has(treeItem.label))
+        if (treeItem !== undefined && treeItem.label !== undefined && Database._loadedTreeItems.has(treeItem.label))
         {
             Database._loadedTreeItems.set(treeItem.label, treeItem);
             return true;
@@ -257,9 +257,9 @@ export class Database {
      * Return the TreeItem with the given label
      * @param label Label of the TreeItem
      */
-    static getTreeItem(label: string | undefined): TreeItem | undefined
+    static getTreeItem(label: string|undefined): TreeItem|undefined
     {
-        if(label !== undefined && this._loadedTreeItems.has(label))
+        if (label !== undefined && this._loadedTreeItems.has(label))
         {
             return this._loadedTreeItems.get(label);
         }
@@ -274,19 +274,18 @@ export class Database {
      * Return all Treeitems or the ones which labels were given
      * @param labels List of labels for TreeItems to be returned
      */
-    static getTreeItems(labels?: (string|undefined)[] | undefined): TreeItem[]
+    static getTreeItems(labels?: (string|undefined)[]|undefined): TreeItem[]
     {
-        if(labels !== undefined)
+        if (labels !== undefined)
         {
             var treeItems: TreeItem[] = [];
-            labels.forEach((label: string|undefined) =>
-            {
+            labels.forEach((label: string|undefined) => {
                 var occuredLabels: string[] = [];
-                if(label !== undefined && !occuredLabels.includes(label))
+                if (label !== undefined && !occuredLabels.includes(label))
                 {
                     occuredLabels.push(label);
                     var treeItem = Database._loadedTreeItems.get(label);
-                    if(treeItem !== undefined)
+                    if (treeItem !== undefined)
                     {
                         treeItems.push(treeItem);
                     }
@@ -300,10 +299,9 @@ export class Database {
         }
     }
 
-    
     static getFilteredFragments(filter: string): Fragment[]
     {
-        if(filter === "")
+        if (filter === "")
         {
             return Array.from(Database._loadedFragments.values());
         }
@@ -312,45 +310,41 @@ export class Database {
 
         let fragmentList: Fragment[] = Array.from(Database._loadedFragments.values());
 
-        filterList.forEach((filterElement: string) =>
-        {
-            if(filterElement.includes("label:") && filterElement.indexOf("label:") === 0)     // Filtern nach Fragmenten, die die gesuchte Label als Substring haben
+        filterList.forEach((filterElement: string) => {
+            if (filterElement.includes("label:") && filterElement.indexOf("label:") === 0) // Filtern nach Fragmenten, die die gesuchte Label als Substring haben
             {
                 filterElement = filterElement.split(":")[1];
                 fragmentList = fragmentList.filter(fragment => fragment.label.toLowerCase().includes(filterElement.toLowerCase()));
             }
-            if(filterElement.includes("scope:") && filterElement.indexOf("scope:") === 0)     // Filtern nach Fragmenten, die die gesuchte Sprache als Substring haben
+            if (filterElement.includes("scope:") && filterElement.indexOf("scope:") === 0) // Filtern nach Fragmenten, die die gesuchte Sprache als Substring haben
             {
                 filterElement = filterElement.split(":")[1];
-                fragmentList = fragmentList.filter(fragment =>
-                {
-                    if(fragment.scope !== undefined)
+                fragmentList = fragmentList.filter(fragment => {
+                    if (fragment.scope !== undefined)
                     {
                         return fragment.scope.toLowerCase().includes(filterElement.toLowerCase());
                     }
-                });   
+                });
             }
-            if(filterElement.includes("domain:") && filterElement.indexOf("domain:") === 0)     // Filtern nach Fragmenten, die die gesuchte Domäne als Substring haben
+            if (filterElement.includes("domain:") && filterElement.indexOf("domain:") === 0) // Filtern nach Fragmenten, die die gesuchte Domäne als Substring haben
             {
                 filterElement = filterElement.split(":")[1];
-                fragmentList = fragmentList.filter(fragment =>
+                fragmentList = fragmentList.filter(fragment => {
+                    if (fragment.domain !== undefined)
                     {
-                        if(fragment.domain !== undefined)
-                        {
-                            return fragment.domain.toLowerCase().includes(filterElement.toLowerCase());
-                        }
-                    });      
+                        return fragment.domain.toLowerCase().includes(filterElement.toLowerCase());
+                    }
+                });
             }
-            if(filterElement.includes("keyword:") && filterElement.indexOf("keyword:") === 0)   // Filtern nach Fragmenten, die das exakte gesuchte Keyword besitzen
+            if (filterElement.includes("keyword:") && filterElement.indexOf("keyword:") === 0) // Filtern nach Fragmenten, die das exakte gesuchte Keyword besitzen
             {
                 filterElement = filterElement.split(":")[1];
-                fragmentList = fragmentList.filter(fragment =>
+                fragmentList = fragmentList.filter(fragment => {
+                    if (fragment.keywords !== undefined)
                     {
-                        if(fragment.keywords !== undefined)
-                        {
-                            return fragment.keywords.includes(filterElement);
-                        }
-                    });
+                        return fragment.keywords.includes(filterElement);
+                    }
+                });
             }
         });
         return fragmentList;
