@@ -198,7 +198,8 @@ export class PyPa
         let insertPlaceholders = function(code: string) {
             // List of all placeholders found in the code snippet
             var placeholders = findPlaceholders(code);
-/*
+
+            // Sort the placeholders (top to down, left to right) in order to make sure, that the placeholders get inserted in the right order with the right index
             placeholders = placeholders.sort((a: any, b: any) =>
                 {
                     if(a.loc.start.line > b.loc.start.line ||  a.loc.start.line === b.loc.start. line && a.loc.start.column > b.loc.start.column)
@@ -210,8 +211,7 @@ export class PyPa
                         return -1
                     }
                 })
-*/
-//            console.log(placeholders)
+
             // Number of variables of paceholders that have already been replaced
             var index = 0;
             // Execute the replacement for each placeholder seperately
@@ -219,7 +219,8 @@ export class PyPa
                 // Again, calculate all placeholders of the code snippet (by iteratively changing the code,
                 // the location of the remaining variables can change -> therefore placeholders have to be calculated again)
                 var placeholderList = findPlaceholders(code);
-/*
+
+                // Sort the placeholderList in order to make sure, that the placeholders get inserted in the right order with the right index
                 placeholderList = placeholderList.sort((a: any, b: any) =>
                 {
 
@@ -232,18 +233,12 @@ export class PyPa
                         return -1
                     }
                 })
-*/
+
                 // Save the name of the current placeholder
                 var name = placeholder.name;
-                // Look through the recent list of placeholders and replace the current placeholder by the on in the list with the same name
-//                placeholder = placeholderList[index];
-                placeholderList.forEach((element: any) =>
-                {
-                    if(element.name === name)
-                    {
-                        placeholder = element;;
-                    }
-                });
+
+                // A inserted placeholder no longer gets recognised as placeholder, so the next placeholder is alway on index 0
+                placeholder = placeholderList[0];
 
                 // Extract position metrics from the placeholder
                 var line = placeholder.loc.start.line - 1;
@@ -308,20 +303,45 @@ export class PyPa
                 var document = editor.document;
                 // Save list of placeholders found in the code snippet
                 var placeholders = findPlaceholders(code);
+
+                // Sort the placeholders in order to make sure, that the inserted function gets te correct index for the placeholder (corresponding to the order ininsertPlaceholders)
+                placeholders = placeholders.sort((a: any, b: any) =>
+                {
+                    if(a.loc.start.line > b.loc.start.line ||  a.loc.start.line === b.loc.start. line && a.loc.start.column > b.loc.start.column)
+                    {
+                        return 1;
+                    }
+                    else
+                    {
+                        return -1
+                    }
+                })
+                var index = 0;
                 // Execute the replacement for each placeholder seperately
                 placeholders.forEach((placeholder: any) => {
                     // Again, calculate all placeholders of the code snippet (by iteratively changing the code,
                     // the location of the remaining variables can change -> therefore placeholders have to be calculated again)
                     var placeholderList = findPlaceholders(code);
+
+                    // Sort the placeholderList in order to make sure, that the inserted function gets te correct index for the placeholder (corresponding to the order ininsertPlaceholders)
+                    placeholderList = placeholderList.sort((a: any, b: any) =>
+                    {
+    
+                        if(a.loc.start.line > b.loc.start.line ||  a.loc.start.line === b.loc.start. line && a.loc.start.column > b.loc.start.column)
+                        {
+                            return 1;
+                        }
+                        else
+                        {
+                            return -1
+                        }
+                    })
+
+                    // The index states increments with every inserted function, so the current placeholder to be replaced is on index
+                    placeholder = placeholderList[index];
+
                     // Save the name of the current placeholder
                     var name = placeholder.name;
-                    // Look through the recent list of placeholders and replace the current placeholder by the on in the list with the same name
-                    placeholderList.forEach((element: any) => {
-                        if (element.name === name)
-                        {
-                            placeholder = element;
-                        }
-                    });
 
                     // Extract position metrics from the placeholder
                     var line = placeholder.loc.start.line - 1;
@@ -366,6 +386,8 @@ export class PyPa
                         newCode += code[cnt];
                     }
                     code = newCode;
+                    index++
+
                 });
 
                 // Define the special function
@@ -378,8 +400,6 @@ export class PyPa
 
                 // Stick all pieces together
                 code = typeDef + beginning + code + end;
-                console.log("####Modified Code####");
-                console.log(code)
             }
             return code;
         };
@@ -417,15 +437,9 @@ export class PyPa
                                                       });
                                                       Placeholder.placeholders = [];
                                                       Variable.variables = [];
-                                                      console.log("####Variables####");
                                                       results.forEach(variable => {
-                                                          console.log(variable)
                                                           variable = JSON.parse(variable);
                                                           new Variable(variable.name, variable.id, variable.index, variable.length, variable.type);
-                                                      })
-                                                      console.log("####Placeholders####");
-                                                      Placeholder.placeholders.forEach(elem =>{
-                                                          console.log(elem);
                                                       })
                                                       var placeholders = "";
                                                       // Bring the placeholders in a standardized format
