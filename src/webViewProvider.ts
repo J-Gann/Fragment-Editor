@@ -2,13 +2,14 @@ import * as vscode from 'vscode';
 import { FragmentProvider } from "./fragmentProvider";
 import { XMLHttpRequest } from 'xmlhttprequest-ts';
 import { resolve } from 'dns';
+import * as extension from './extension';
 
 export class WebViewProvider {
     panel: any;
-    context: vscode.ExtensionContext;
+    context: extension.Ecclass;
     fragmentProvider: FragmentProvider;
 
-    constructor(context: vscode.ExtensionContext, fragmentProvider: FragmentProvider) {
+    constructor(context: extension.Ecclass, fragmentProvider: FragmentProvider) {
         this.context = context;
         this.fragmentProvider = fragmentProvider;
     }
@@ -71,9 +72,33 @@ export class WebViewProvider {
         {
             if(http.readyState === 4)
             {
-                this.panel.webview.html = http.responseText;
+                this.panel.webview.html = this.embedSite(http.responseText);
                 this.panel.reveal();
             }
         };
+    }
+
+    private embedSite(webadress: string) {
+        return `<!DOCTYPE html>
+          <html lang="de">
+          <head>
+<script type="text/javascript">
+    if (document.addEventListener) { // IE >= 9; other browsers
+        document.addEventListener('contextmenu', function(e) {
+            alert("You've tried to open context menu"); //here you draw your own menu
+            e.preventDefault();
+        }, false);
+    } else { // IE < 9
+        document.attachEvent('oncontextmenu', function() {
+            alert("You've tried to open context menu");
+            window.event.returnValue = false;
+        });
+    }
+</script>
+</head>
+          <body>
+            <embed src="${webadress}">
+          </body>
+          </html>`;
     }
 }

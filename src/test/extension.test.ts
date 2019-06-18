@@ -21,5 +21,8 @@ suite("Extension Tests", function ()
     test("fragmentProvider Test", function()
     {
         var database = new Database("./testdata");
+        var econtext = new myExtension.Ecclass([], "./");
+        var fragProvider = new FragmentProvider(econtext);
+        fragProvider.addEntry();
     });
 });

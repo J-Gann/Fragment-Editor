@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as extension from './extension';
 import { Fragment } from "./fragment";
 import { Database } from './database';
 import { FragmentEditor } from './fragmentEditor';
@@ -18,7 +19,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<Fragment>
 	private _onDidChangeTreeData: vscode.EventEmitter<Fragment | undefined> = new vscode.EventEmitter<Fragment | undefined>();
 	readonly onDidChangeTreeData: vscode.Event<Fragment | undefined> = this._onDidChangeTreeData.event;
 
-    constructor(context: vscode.ExtensionContext)
+    constructor(context: extension.Ecclass)
     {
         this.fragmentListFilter = "";
         this.fragmentEditor = new FragmentEditor(context, this);

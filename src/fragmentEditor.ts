@@ -3,13 +3,14 @@ import * as vscode from 'vscode';
 import { Database } from "./database";
 import { FragmentProvider } from "./fragmentProvider";
 import { FOEF } from "./parametrization";
+import * as extension from './extension';
 
 export class FragmentEditor {
     panel: any;
-    context: vscode.ExtensionContext;
+    context: extension.Ecclass;
     fragmentProvider: FragmentProvider;
 
-    constructor(context: vscode.ExtensionContext, fragmentProvider: FragmentProvider) {
+    constructor(context: extension.Ecclass, fragmentProvider: FragmentProvider) {
         this.context = context;
         this.fragmentProvider = fragmentProvider;
     }
