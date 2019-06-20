@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import {Database} from "./database";
 import {FragmentProvider} from "./fragmentProvider";
 import {FOEF} from "./parametrization";
+import { PyPa } from "./parametrization_old";
 
 export class FragmentEditor
 {
@@ -45,9 +46,6 @@ export class FragmentEditor
                 this.fragmentProvider.refresh();
                 this.panel.dispose();
                 this.panel.onDidDispose();
-                return;
-            case 'parametrize':
-                this.panel.postMessage({command : 'parametrize', text : FOEF.parametrize(message.text)});
                 return;
             }
         }, undefined, this.context.subscriptions);
@@ -108,8 +106,6 @@ export class FragmentEditor
             Tags: <input id="tags" type="text" value="${fragment.tags}">
             Prefix: <input id="prefix" type="text" value="${fragment.prefix}">
             Body: <textarea id="body" rows="16">${fragment.body}</textarea>
-            <button title="Replaces Keywords, Body and Placeholders" style="float: right; margin: 10px; margin-top: 5px" onclick="parametrize()" class="btn waves-effect waves-light" type="submit" name="action">Parametrize</button>
-            <br><br><br>
             Scope: <input id="scope" type="text" value="${fragment.scope}">
             Domain: <input id="domain" type="text" value="${fragment.domain}">
             Placeholders: <input style="color:lightgrey;" id="placeholders" type="text" value="${fragment.placeholders}" disabled>
@@ -136,23 +132,6 @@ export class FragmentEditor
                     vscode.postMessage({command: 'cancel', text: ''});
                 }
 
-                function parametrize()
-                {
-                    vscode.postMessage({command: 'parametrize', text: document.getElementById("body").value});
-                }
-
-                window.addEventListener('message', event =>
-                {
-                    const message = event.data;
-                    switch(message.command)
-                    {
-                        case 'parametrize':
-                            document.getElementById("body").value = message.text.body;
-                            document.getElementById("keywords").value = message.text.keywords;
-                            document.getElementById("placeholders").value = message.text.placeholders;
-                            return;
-                    }
-                });
             </script>
 
           </body>

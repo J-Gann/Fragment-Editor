@@ -2,8 +2,7 @@ import * as vscode from 'vscode';
 import {Fragment} from "./fragment";
 import {Database} from './database';
 import {FragmentEditor} from './fragmentEditor';
-import {FOEF,
-        PyPa} from './parametrization';
+import {FOEF, PyPa} from './parametrization';
 import {TreeItem} from './treeItem';
 
 /**
@@ -150,13 +149,16 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem>
         var editor = vscode.window.activeTextEditor;
         var selection: vscode.Selection;
         var textDocument: vscode.TextDocument;
-        var text: string = "";
 
         if (editor)
         {
             selection = editor.selection;
             textDocument = editor.document;
-            text = textDocument.getText(new vscode.Range(selection.start, selection.end));
+        }
+        else
+        {
+            vscode.window.showErrorMessage("No editor found");
+            console.log("[W] | [FragmentProvider | addFragment]: Failed");
         }
 
         var input = vscode.window.showInputBox({prompt : "Input a label for the Fragment"});
@@ -181,19 +183,42 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem>
                 //var obj = FOEF.parametrize(text);
                 //var newFragment = new Fragment({...{label: label}, ...obj});
                 //Database.addFragment(newFragment);
-                
-                var editor = vscode.window.activeTextEditor;
-                var textDocument = editor!.document;
-                var selection = editor!.selection;
-                PyPa.parametrize(textDocument, selection).then(obj =>
+                if(textDocument.fileName.match(/.*\.py$/) && editor !== undefined)
                 {
-                    var newFragment = new Fragment({...{label : label}, ...obj});
+                    PyPa.parametrize(textDocument, selection).then(obj =>
+                        {
+                            var newFragment = new Fragment({...{label : label}, ...obj});
+                            Database.addFragment(newFragment);
+                            this.refresh();
+                            vscode.window.showInformationMessage("Successfully Added Parametrized Fragment");
+                        },
+                        (err: any) =>
+                        {
+                            vscode.window.showErrorMessage("Parametrization Failed. Python Code not executable?");
+                            var body = textDocument.getText(new vscode.Range(selection.start, selection.end));
+                            var newFragment = new Fragment({label: label, body: body});
+                            Database.addFragment(newFragment);
+                            this.refresh();
+                            vscode.window.showInformationMessage("Added Fragment without Parametrization");
+                        });
+                }
+                else if(editor !== undefined && selection !== undefined)
+                {
+                    var body = textDocument.getText(new vscode.Range(selection.start, selection.end));
+                    var newFragment = new Fragment({label: label, body: body});
                     Database.addFragment(newFragment);
+                    if(!textDocument.fileName.match(/.*\.py$/))
+                    {
+                        vscode.window.showInformationMessage("Parametrization only Supported for Python");
+                    }
                     this.refresh();
-                });
-
+                }
+                else
+                {
+                    var newFragment = new Fragment({label: label});
+                    Database.addFragment(newFragment);
+                }
             }
-            this.refresh();
         });
     }
 

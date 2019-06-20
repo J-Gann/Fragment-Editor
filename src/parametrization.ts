@@ -217,28 +217,38 @@ export class PyPa
         {
             try
             {
-                PythonShell.runString(script, {}, ((err, results) =>
+                PythonShell.runString(script, {}, ((err: any, results: any) =>
                 {
-                    if(err)
+                    try
                     {
-                        throw err;
+                        if(err)
+                        {
+                            throw err;
+                        }
+                        if(results !== undefined && results !== null)
+                        {
+    
+                            PyPa.assignDatatypes(results, placeholders);
+                            var result = PyPa.formatResult(placeholders, snippet);
+                            resolve(result);
+                        }
+                        else
+                        {
+                            reject();
+                        }
                     }
-                    if(results !== undefined && results !== null)
+                    catch(err)
                     {
+                        console.log("[E] | [PyPa | executeScript]: Failed: " + err);
+                        reject(err);
+                    }
 
-                        PyPa.assignDatatypes(results, placeholders);
-                        var result = PyPa.formatResult(placeholders, snippet);
-                        resolve(result);
-                    }
-                    else
-                    {
-                        reject();
-                    }
                 }));
             }
             catch (err)
             {
-                reject(err)
+                console.log("[E] | [PyPa | executeScript]: Failed: " + err);
+                reject(err);
             }
 
         });
@@ -254,7 +264,7 @@ export class PyPa
         var placeholderString = "";
         placeholders.forEach((placeholder: Placeholder) =>
         {
-            placeholderString += "{" + placeholder.index + ", " + placeholder.name + ", " + placeholder.type + "}" + ", "
+            placeholderString += "{" + placeholder.index + ":" + placeholder.name + ":" + placeholder.type + "}" + ", "
         })
         return {body: snippet, placeholders: placeholderString};
     }
@@ -273,6 +283,7 @@ export class PyPa
         var snippet_start_index = PyPa.calculateIndex(document, selection.start.line + 1, selection.start.character);
         var snippet_end_index = PyPa.calculateIndex(document, selection.end.line + 1, selection.end.character);
         var script = PyPa.createScript(placeholders, document, snippet, snippet_start_index, snippet_end_index);
+        console.log(script);
         return this.executeScript(script, placeholders, parametrizedSnippet);
     }
 
