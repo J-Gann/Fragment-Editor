@@ -16,6 +16,7 @@ export class Database {
         Database._loadedFragments = new Map();
         Database.loadFragments();
         Database._loadedTreeItems = new Map();
+        console.log(Database.getTags());
     }
 
     static createFragmentDatabase(): void {
@@ -33,6 +34,9 @@ export class Database {
         const filebuffer = fs.readFileSync(Database._fragmentDirectory + '/fragments.fragmentDatabase');
         Database._fragmentDatabase = new sql.Database(filebuffer);
         Database._fragmentDatabase.run("CREATE TABLE IF NOT EXISTS fragments (label char PRIMARY KEY,prefix char,scope char,body char,description char,keywords char,tags char,domain char,placeholders char,snippet char);");
+        Database._fragmentDatabase.run("CREATE VIEW IF NOT EXISTS v_tags AS WITH RECURSIVE split(name, rest) " +
+            " AS (SELECT '', tags || ',' FROM fragments UNION ALL SELECT substr(rest, 0, instr(rest, ',')), substr(rest, instr(rest, ',')+1) " +
+            "FROM split WHERE rest <> '') SELECT distinct name FROM split WHERE name <> '' ORDER BY name;");
         Database.persist();
     }
 
@@ -286,7 +290,7 @@ export class Database {
                     }
                 });
             }
-            if (filterElement.includes("keyword:") && filterElement.indexOf("keyword:") === 0) // Filtern nach Fragmenten, die das exakte gesuchte Keyword besitzen
+            if (filterElement.includes("keyword:") && filterElement.indexOf("keyword:") === 0) // Filtern nach Fragmenten, die das exakte gesuchte Keyword besitzen 
             {
                 filterElement = filterElement.split(":")[1];
                 fragmentList = fragmentList.filter(fragment => {
@@ -297,5 +301,21 @@ export class Database {
             }
         });
         return fragmentList;
+    }
+
+    static getTags(): string[] {
+        let tags: string[] = [];
+
+        const res = Database._fragmentDatabase.exec("SELECT * FROM v_tags")[0];
+        if (res === undefined) {
+            return tags;
+        }
+
+        res.values.forEach((element: any[]) => {
+            var tag = element[0];
+            tags.push(tag);
+        });
+
+        return tags;
     }
 }

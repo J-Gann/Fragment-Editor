@@ -71,11 +71,13 @@ export class FragmentEditor {
         this.panel.title = fragment.label;
 
         const path = require("path");
-        const onDiskPath = vscode.Uri.file(path.join(this.context.extensionPath, 'external/materialize', 'materialstyle.css'));
-
+        let onDiskPath = vscode.Uri.file(path.join(this.context.extensionPath, 'external/materialize', 'materialize.css'));
         const style = onDiskPath.with({scheme: 'vscode-resource'});
 
-        this.panel.webview.html = this.getWebviewContent(fragment, style);
+        onDiskPath = vscode.Uri.file(path.join(this.context.extensionPath, 'external/materialize', 'materialize.js'));
+        const js = onDiskPath.with({scheme: 'vscode-resource'});
+
+        this.panel.webview.html = this.getWebviewContent(fragment, style, js);
         this.panel.reveal();
     }
 
@@ -85,7 +87,7 @@ export class FragmentEditor {
         }
     }
 
-    private getWebviewContent(fragment: Fragment, style: vscode.Uri) {
+    private getWebviewContent(fragment: Fragment, style: vscode.Uri, js: vscode.Uri) {
         return `<!DOCTYPE html>
         <html lang="de">
         <head>
@@ -93,9 +95,12 @@ export class FragmentEditor {
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>${fragment.label}</title>
             <link rel="stylesheet" href="${style}">
+            <script src="${js}"></script> 
             <style>
-                input { width:100%; color:grey; font-size: 15px; border: none }
-                textarea { width:100%; color:grey; font-size: 15px; height: auto; resize: none; }
+                .vscode-dark input { width:100%; color:white; font-size: 15px; border: none }
+                .vscode-dark textarea { width:100%; color:white; font-size: 15px; height: auto; resize: none; }
+                .vscode-light input { width:100%; color:black; font-size: 15px; border: none }
+                .vscode-light textarea { width:100%; color:black; font-size: 15px; height: auto; resize: none; }
             </style>
         </head>
         <body>
@@ -105,7 +110,8 @@ export class FragmentEditor {
             <br><br><br><br><br>
             Description: <input id="description" type="text" value="${fragment.description}">
             Keywords: <input id="keywords" type="text" value="${fragment.keywords}">
-            Tags: <input id="tags" type="text" value="${fragment.tags}">
+            Tags: <div class="chips"><input id="tags" type="text" value="${fragment.tags}"></div>
+            ${this.getDataList()}
             Prefix: <input id="prefix" type="text" value="${fragment.prefix}">
             Body: <textarea id="body" rows="16">${fragment.body}</textarea>
             <button title="Replaces Keywords, Body and Placeholders" style="float: right; margin: 10px; margin-top: 5px" onclick="parametrize()" class="btn waves-effect waves-light" type="submit" name="action">Parametrize</button>
@@ -116,8 +122,7 @@ export class FragmentEditor {
 
             <script>
                 const vscode = acquireVsCodeApi();
-                function submitFunction()
-                {
+                function submitFunction() {
                     vscode.postMessage({command: 'submit', text: {
                         "label":  document.getElementById("label").innerHTML ,
                         "description": document.getElementById("description").value, 
@@ -131,21 +136,17 @@ export class FragmentEditor {
                     }});    
                 }
 
-                function cancelFunction()
-                {
+                function cancelFunction() {
                     vscode.postMessage({command: 'cancel', text: ''});
                 }
 
-                function parametrize()
-                {
+                function parametrize() {
                     vscode.postMessage({command: 'parametrize', text: document.getElementById("body").value});
                 }
 
-                window.addEventListener('message', event =>
-                {
+                window.addEventListener('message', event => {
                     const message = event.data;
-                    switch(message.command)
-                    {
+                    switch(message.command) {
                         case 'parametrize':
                             document.getElementById("body").value = message.text.body;
                             document.getElementById("keywords").value = message.text.keywords;
@@ -153,9 +154,25 @@ export class FragmentEditor {
                             return;
                     }
                 });
+
+                document.addEventListener('DOMContentLoaded', function() {
+                    var elems = document.querySelectorAll('.chips');
+                    var instances = M.Chips.init(elems, {});
+                });
             </script>
 
           </body>
           </html>`;
+    }
+
+    private getDataList(): string {
+        var tags = "";
+
+        Database.getTags().forEach(tag => {
+            tags = tags + '<option value="' + tag + '">';
+        });
+
+        console.log(tags);
+        return '<datalist id="taglist">' + tags + "</datalist>";
     }
 }
