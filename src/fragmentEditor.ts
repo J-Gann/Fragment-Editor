@@ -94,8 +94,8 @@ export class FragmentEditor {
             <title>${fragment.label}</title>
             <link rel="stylesheet" href="${style}">
             <style>
-                input { width:100%; color:silver; font-size: 15px; border: none }
-                textarea { width:100%; color:silver; font-size: 15px; height: auto; resize: none; }
+                input { width:100%; color:grey; font-size: 15px; border: none }
+                textarea { width:100%; color:grey; font-size: 15px; height: auto; resize: none; }
             </style>
         </head>
         <body>
