@@ -1,7 +1,7 @@
-import { Fragment } from "./fragment";
+import {Fragment} from "./fragment";
 import sql = require('sql.js');
 import fs = require("fs");
-import { TreeItem } from "./treeItem";
+import {TreeItem} from "./treeItem";
 import * as vscode from 'vscode';
 
 export class Database {
@@ -58,7 +58,17 @@ export class Database {
             var tags = element[6];
             var domain = element[7];
             var placeholders = element[8];
-            var newFragment = new Fragment({ label: label, prefix: prefix, scope: scope, body: body, description: description, keywords: keywords, tags: tags, domain: domain, placeholders: placeholders });
+            var newFragment = new Fragment({
+                label: label,
+                prefix: prefix,
+                scope: scope,
+                body: body,
+                description: description,
+                keywords: keywords,
+                tags: tags,
+                domain: domain,
+                placeholders: placeholders
+            });
             Database._loadedFragments.set(label, newFragment);
         });
     }
@@ -91,8 +101,7 @@ export class Database {
                 }
             });
             return fragments;
-        }
-        else {
+        } else {
             return Array.from(Database._loadedFragments.values());
         }
     }
@@ -105,8 +114,7 @@ export class Database {
         var fragment = Database._loadedFragments.get(label);
         if (fragment !== undefined) {
             return fragment;
-        }
-        else {
+        } else {
             console.log("[W] | [Database | getFragment]: Failed for parameter: " + label);
             return undefined;
         }
@@ -120,8 +128,7 @@ export class Database {
         if (fragment === undefined || Database._loadedFragments.has(fragment.label)) {
             console.log("[W] | [Database | addFragment]: Failed for fragment: " + fragment);
             return false;
-        }
-        else {
+        } else {
             Database._loadedFragments.set(fragment.label, fragment);
             Database._fragmentDatabase.run("INSERT INTO fragments VALUES (?,?,?,?,?,?,?,?,?,?)", [fragment.label, fragment.prefix, fragment.scope, fragment.body, fragment.description, fragment.keywords, fragment.tags, fragment.domain, fragment.placeholders, fragment.snippet]);
             Database.persist();
@@ -139,8 +146,7 @@ export class Database {
             Database._fragmentDatabase.run("DELETE FROM fragments WHERE label=?", [label]);
             Database.persist();
             return true;
-        }
-        else {
+        } else {
             console.log("[W] | [Database | deleteFragment]: Failed for label: " + label);
             return false;
         }
@@ -156,8 +162,7 @@ export class Database {
             Database._fragmentDatabase.run("UPDATE fragments SET prefix=? , scope=?, body=?, description=?, keywords=?, tags=?, domain=?, placeholders=? WHERE label=?", [fragment.prefix, fragment.scope, fragment.body, fragment.description, fragment.keywords, fragment.tags, fragment.domain, fragment.placeholders, fragment.label]);
             Database.persist();
             return true;
-        }
-        else {
+        } else {
             console.log("[W] | [Database | updateFragment]: Failed for fragment: " + fragment);
             return false;
         }
@@ -184,8 +189,7 @@ export class Database {
         if (treeItem !== undefined && treeItem.label !== undefined && !this._loadedTreeItems.has(treeItem.label)) {
             this._loadedTreeItems.set(treeItem.label, treeItem);
             return true;
-        }
-        else {
+        } else {
             console.log("[W] | [Database | addTreeItem]: Failed for TreeItem: " + treeItem);
             return false;
         }
@@ -199,8 +203,7 @@ export class Database {
         if (label !== undefined && Database._loadedTreeItems.has(label)) {
             Database._loadedTreeItems.delete(label);
             return true;
-        }
-        else {
+        } else {
             console.log("[W] | [Database | deleteTreeItem]: Failed for label: " + label);
             return false;
         }
@@ -214,8 +217,7 @@ export class Database {
         if (treeItem !== undefined && treeItem.label !== undefined && Database._loadedTreeItems.has(treeItem.label)) {
             Database._loadedTreeItems.set(treeItem.label, treeItem);
             return true;
-        }
-        else {
+        } else {
             console.log("[W] | [Database | updateTreeItem]: Failed for TreeItem: " + treeItem);
             return false;
         }
@@ -228,8 +230,7 @@ export class Database {
     static getTreeItem(label: string | undefined): TreeItem | undefined {
         if (label !== undefined && this._loadedTreeItems.has(label)) {
             return this._loadedTreeItems.get(label);
-        }
-        else {
+        } else {
             // console.log("[W] | [Database | getTreeItem]: Failed for label: " + label);
             return undefined;
         }
@@ -253,8 +254,7 @@ export class Database {
                 }
             });
             return treeItems;
-        }
-        else {
+        } else {
             return Array.from(Database._loadedTreeItems.values());
         }
     }

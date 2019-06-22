@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import {Database} from "./database";
 import {FragmentProvider} from "./fragmentProvider";
 import {FOEF} from "./parametrization";
-import { PyPa } from "./parametrization_old";
+import {PyPa} from "./parametrization_old";
 
 export class FragmentEditor {
     panel: any;
@@ -31,19 +31,28 @@ export class FragmentEditor {
         });
 
         this.panel.webview.onDidReceiveMessage((message: any) => {
-            switch (message.command)
-            {
-            case 'cancel':
-                this.panel.dispose();
-                this.panel.onDidDispose();
-                return;
-            case 'submit':
-                var newFragment = new Fragment({label : message.text.label, prefix : message.text.prefix, scope : message.text.scope, body : message.text.body, description : message.text.description, keywords : message.text.keywords, tags : message.text.tags, domain : message.text.domain, placeholders : message.text.placeholders});
-                Database.updateFragment(newFragment);
-                this.fragmentProvider.refresh();
-                this.panel.dispose();
-                this.panel.onDidDispose();
-                return;
+            switch (message.command) {
+                case 'cancel':
+                    this.panel.dispose();
+                    this.panel.onDidDispose();
+                    return;
+                case 'submit':
+                    var newFragment = new Fragment({
+                        label: message.text.label,
+                        prefix: message.text.prefix,
+                        scope: message.text.scope,
+                        body: message.text.body,
+                        description: message.text.description,
+                        keywords: message.text.keywords,
+                        tags: message.text.tags,
+                        domain: message.text.domain,
+                        placeholders: message.text.placeholders
+                    });
+                    Database.updateFragment(newFragment);
+                    this.fragmentProvider.refresh();
+                    this.panel.dispose();
+                    this.panel.onDidDispose();
+                    return;
             }
         }, undefined, this.context.subscriptions);
     }
@@ -224,5 +233,5 @@ export class FragmentEditor {
 
     private formatForHtml(input: string): string {
         return input.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    } 
+    }
 }

@@ -14,4 +14,5 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('fragmentEditor.deleteTreeItem', (treeItem: TreeItem) => fragmentProvider.deleteTreeItem(treeItem));
 }
 
-export function deactivate() { }
+export function deactivate() {
+}

@@ -1,23 +1,23 @@
 import * as vscode from 'vscode';
-import { Fragment } from "./fragment";
-import { Database } from './database';
+import {Fragment} from "./fragment";
+import {Database} from './database';
 import {PythonShell} from 'python-shell';
+
 const filbert = require('filbert');
 const jp = require('jsonpath');
 const clonedeep = require('lodash.clonedeep');
 
-class Placeholder
-{
+class Placeholder {
     start_index: number;
     start_line: number;
     end_index: number;
     end_line: number;
     name: string;
     type: string | undefined;
-    index: number |undefined;
+    index: number | undefined;
     id: number;
-    constructor(id: number, name: string, start_index: number, end_index: number, start_line: number, end_line: number, type?: string, index?: number)
-    {
+
+    constructor(id: number, name: string, start_index: number, end_index: number, start_line: number, end_line: number, type?: string, index?: number) {
         this.start_index = start_index;
         this.start_line = start_line;
         this.end_index = end_index;
@@ -29,20 +29,17 @@ class Placeholder
     }
 }
 
-export class PyPa
-{
+export class PyPa {
     /**
      * Calculates the index of a character of which only line and column are known
      * @param document The document, for which the index of a line-column-pair should be calculated
      * @param line The line of the char which index should be calculated
      * @param column The column of the char which index should be calculated
      */
-    static calculateIndex(document: string, line: number, column: number): number
-    {
+    static calculateIndex(document: string, line: number, column: number): number {
         var document_array = document.split('\n');
         var index = 0;
-        for(var cnt = 0; cnt < line-1; cnt++)
-        {
+        for (var cnt = 0; cnt < line - 1; cnt++) {
             index += document_array[cnt].length + 1;
         }
         index += column;
@@ -56,8 +53,7 @@ export class PyPa
      * @param end The last index of the to be replaced section
      * @param replacement The new section
      */
-    static replace(original: string, start: number, end: number, replacement: string): string
-    {
+    static replace(original: string, start: number, end: number, replacement: string): string {
         var firstPart = original.substring(0, start);
         var lastPart = original.substring(end, original.length);
         return firstPart + replacement + lastPart;
@@ -70,27 +66,22 @@ export class PyPa
      * @param start_snippet_index The first index of the snippet in reference to the document
      * @param end_snippet_index The last index of the snippet in reference to the document
      */
-    static findPlaceholders(snippet: string): Placeholder[]
-    {
+    static findPlaceholders(snippet: string): Placeholder[] {
         // Use 'filbert' and 'jsonpath' to extract declarations and parameters
-        var parsed: JSON = filbert.parse(snippet, {locations : true});
+        var parsed: JSON = filbert.parse(snippet, {locations: true});
         var declarations = jp.query(parsed, '$.body[?(@.type=="VariableDeclaration")].declarations[0].id');
         var parameters = jp.query(parsed, '$..arguments[?(@.type=="Identifier")]');
         var placeholders: Placeholder[] = [];
 
         // Mark evers placeholders as defined, if a declaration of a variable with the same name appears anywhere in the snippet [best effort]
-        parameters.forEach((parameter: any) => 
-        {
+        parameters.forEach((parameter: any) => {
             var match = false;
-            declarations.forEach((decl: any) => 
-            {
-                if(decl.name === parameter.name)
-                {
+            declarations.forEach((decl: any) => {
+                if (decl.name === parameter.name) {
                     match = true;
                 }
             });
-            if(!match)
-            {
+            if (!match) {
                 var name = parameter.name;
                 var start_index = PyPa.calculateIndex(snippet, parameter.loc.start.line, parameter.loc.start.column);
                 var end_index = PyPa.calculateIndex(snippet, parameter.loc.end.line, parameter.loc.end.column);
@@ -108,30 +99,24 @@ export class PyPa
      * @param snippet The snippet that should be parametrized
      * @param placeholders The placeholders the snippet contains
      */
-    static parametrizeSnippet(snippet: string, placeholders: Placeholder[]): string
-    {
+    static parametrizeSnippet(snippet: string, placeholders: Placeholder[]): string {
         var placeholdersTmp = clonedeep(placeholders);
         var index = 1;
-        placeholdersTmp.forEach((placeholder: any) =>
-        {
+        placeholdersTmp.forEach((placeholder: any) => {
             var insert = "{" + index + ":" + placeholder.name + "}";
             snippet = PyPa.replace(snippet, placeholder.start_index, placeholder.end_index, insert);
-            placeholdersTmp.forEach((other_parameter: any) =>
-            {
-                if(placeholder.start_index !== other_parameter.start_index && placeholder.start_line === other_parameter.start_line)
-                {
+            placeholdersTmp.forEach((other_parameter: any) => {
+                if (placeholder.start_index !== other_parameter.start_index && placeholder.start_line === other_parameter.start_line) {
                     other_parameter.start_index += insert.length - placeholder.name.length;
                     other_parameter.end_index += insert.length - placeholder.name.length;
                 }
             });
-            placeholders.forEach((_placeholder: Placeholder) =>
-            {
-                if(_placeholder.id === placeholder.id)
-                {
+            placeholders.forEach((_placeholder: Placeholder) => {
+                if (_placeholder.id === placeholder.id) {
                     _placeholder.index = index;
                 }
             });
-            index += 1;    
+            index += 1;
         });
         return snippet;
     }
@@ -144,32 +129,26 @@ export class PyPa
      * @param snippet_start_index First index of the snippet in relation to the document
      * @param snippet_end_index Last index of the snippet in relation to the document
      */
-    static createScript(placeholders: Placeholder[], document: string, snippet: string, snippet_start_index: number, snippet_end_index: number): string
-    {
+    static createScript(placeholders: Placeholder[], document: string, snippet: string, snippet_start_index: number, snippet_end_index: number): string {
         var placeholdersTmp = clonedeep(placeholders);
-        placeholdersTmp.forEach((placeholder: any) =>
-        {
+        placeholdersTmp.forEach((placeholder: any) => {
             var insert = "error";
-            placeholders.forEach((_placeholder: Placeholder) =>
-            {
-                if(_placeholder.id === placeholder.id)
-                {
+            placeholders.forEach((_placeholder: Placeholder) => {
+                if (_placeholder.id === placeholder.id) {
                     insert = "detType(" + "'" + _placeholder.id + "'" + ", " + placeholder.name + ")";
                 }
             });
             snippet = PyPa.replace(snippet, placeholder.start_index, placeholder.end_index, insert);
-            placeholdersTmp.forEach((other_parameter: any) =>
-            {
-                if(placeholder.start_index !== other_parameter.start_index && placeholder.start_line === other_parameter.start_line)
-                {
+            placeholdersTmp.forEach((other_parameter: any) => {
+                if (placeholder.start_index !== other_parameter.start_index && placeholder.start_line === other_parameter.start_line) {
                     other_parameter.start_index += insert.length - placeholder.name.length;
                     other_parameter.end_index += insert.length - placeholder.name.length;
                 }
             });
         });
-        var detType = "def detType(id, x):\n" + 
-                      "    print('{\\\"id\\\": ' + str(id) + ', \\\"type\\\": ' + '\\\"' + str(type(x)) + '\\\"' + '}')\n" +
-                      "    return x\n";
+        var detType = "def detType(id, x):\n" +
+            "    print('{\\\"id\\\": ' + str(id) + ', \\\"type\\\": ' + '\\\"' + str(type(x)) + '\\\"' + '}')\n" +
+            "    return x\n";
 
         return detType + PyPa.replace(document, snippet_start_index, snippet_end_index, snippet);
     }
@@ -179,26 +158,18 @@ export class PyPa
      * @param results Print statements of the modified python script
      * @param placeholders Placeholders, for which datatypes should be assigned according to the results
      */
-    static assignDatatypes(results: string[], placeholders: Placeholder[])
-    {
-        var result = results.filter(value =>
-        {
-            if (value.match(/^\{"id": .*, "type": .*\}$/))
-            {
+    static assignDatatypes(results: string[], placeholders: Placeholder[]) {
+        var result = results.filter(value => {
+            if (value.match(/^\{"id": .*, "type": .*\}$/)) {
                 return true;
-            }
-            else
-            {
+            } else {
                 return false;
             }
         });
-        placeholders.forEach((placeholder: Placeholder) =>
-        {
-            result.forEach((elem: string) =>
-            {
+        placeholders.forEach((placeholder: Placeholder) => {
+            result.forEach((elem: string) => {
                 var obj = JSON.parse(elem);
-                if(obj.id === placeholder.id)
-                {
+                if (obj.id === placeholder.id) {
                     placeholder.type = obj.type;
                 }
             });
@@ -208,45 +179,32 @@ export class PyPa
     /**
      * Executes a python script
      * @param script Python script that should be executed
-     * @param placeholders 
-     * @param snippet 
+     * @param placeholders
+     * @param snippet
      */
-    static executeScript(script: string, placeholders: Placeholder[], snippet: string): Promise<{body: string, placeholders: string}>
-    {
-        return new Promise((resolve, reject) =>
-        {
-            try
-            {
-                PythonShell.runString(script, {}, ((err: any, results: any) =>
-                {
-                    try
-                    {
-                        if(err)
-                        {
+    static executeScript(script: string, placeholders: Placeholder[], snippet: string): Promise<{ body: string, placeholders: string }> {
+        return new Promise((resolve, reject) => {
+            try {
+                PythonShell.runString(script, {}, ((err: any, results: any) => {
+                    try {
+                        if (err) {
                             throw err;
                         }
-                        if(results !== undefined && results !== null)
-                        {
-    
+                        if (results !== undefined && results !== null) {
+
                             PyPa.assignDatatypes(results, placeholders);
                             var result = PyPa.formatResult(placeholders, snippet);
                             resolve(result);
-                        }
-                        else
-                        {
+                        } else {
                             reject();
                         }
-                    }
-                    catch(err)
-                    {
+                    } catch (err) {
                         console.log("[E] | [PyPa | executeScript]: Failed: " + err);
                         reject(err);
                     }
 
                 }));
-            }
-            catch (err)
-            {
+            } catch (err) {
                 console.log("[E] | [PyPa | executeScript]: Failed: " + err);
                 reject(err);
             }
@@ -259,11 +217,9 @@ export class PyPa
      * @param placeholders Placeholders, of the snippet
      * @param snippet Parametrized snippet
      */
-    static formatResult(placeholders: Placeholder[], snippet: string)
-    {
+    static formatResult(placeholders: Placeholder[], snippet: string) {
         var placeholderString = "";
-        placeholders.forEach((placeholder: Placeholder) =>
-        {
+        placeholders.forEach((placeholder: Placeholder) => {
             placeholderString += "{" + placeholder.index + ":" + placeholder.name + ":" + placeholder.type + "}" + ", ";
         });
         return {body: snippet, placeholders: placeholderString};
@@ -271,11 +227,10 @@ export class PyPa
 
     /**
      * Parametrized the selection of the document and determines the datatypes of the placeholders
-     * @param textDocument 
-     * @param selection 
+     * @param textDocument
+     * @param selection
      */
-    static parametrize(textDocument: vscode.TextDocument, selection: vscode.Selection): Promise<{body: string, placeholders: string}>
-    {
+    static parametrize(textDocument: vscode.TextDocument, selection: vscode.Selection): Promise<{ body: string, placeholders: string }> {
         var document = textDocument.getText();
         var snippet = textDocument.getText(new vscode.Range(selection.start, selection.end));
         var placeholders = PyPa.findPlaceholders(snippet);
@@ -287,8 +242,7 @@ export class PyPa
         return this.executeScript(script, placeholders, parametrizedSnippet);
     }
 
-    static parametrize_test(snippet: string, document: string, snippet_start_index: number, snippet_end_index: number)
-    {
+    static parametrize_test(snippet: string, document: string, snippet_start_index: number, snippet_end_index: number) {
         var placeholders = PyPa.findPlaceholders(snippet);
         var parametrizedSnippet = PyPa.parametrizeSnippet(snippet, placeholders);
         var placeholders = PyPa.findPlaceholders(snippet);
