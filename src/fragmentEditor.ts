@@ -97,7 +97,7 @@ export class FragmentEditor {
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>${fragment.label}</title>
+            <title>${this.formatForHtml(fragment.label)}</title>
             <link rel="stylesheet" href="${style}">
             <link rel="stylesheet" href="${googleicons}">
             <script src="${js}"></script> 
@@ -111,7 +111,7 @@ export class FragmentEditor {
             </style>
         </head>
         <body>
-            <h3 style="float: left; max-width: 70%; overflow: hidden;" id="label" >${fragment.label}</h3>
+            <h3 style="float: left; max-width: 70%; overflow: hidden;" id="label" >${this.formatForHtml(fragment.label)}</h3>
             <button style="float: right; margin: 10px; margin-top: 35px" onclick="cancelFunction()" class="btn waves-effect waves-light" type="submit" name="action">Cancel</button>
             <button style="float: right; margin: 10px; margin-top: 35px" onclick="submitFunction()" class="btn waves-effect waves-light" type="submit" name="action">Save</button>
             <br><br><br><br><br>
@@ -235,4 +235,8 @@ export class FragmentEditor {
 
         return "data: {" + domains + "},";
     }
+
+    private formatForHtml(input: string): string {
+        return input.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    } 
 }
