@@ -169,8 +169,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
                             vscode.window.showInformationMessage("Added Fragment without Parametrization");
                         });
                 }
-                else if(editor !== undefined && selection !== undefined)
-                {
+                else if(editor !== undefined && selection !== undefined) {
                     var body = textDocument.getText(new vscode.Range(selection.start, selection.end));
                     var newFragment = new Fragment({label: label, body: body});
                     Database.addFragment(newFragment);
@@ -180,8 +179,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
                     }
                     this.refresh();
                 }
-                else
-                {
+                else {
                     var newFragment = new Fragment({label: label});
                     Database.addFragment(newFragment);
                 }

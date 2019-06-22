@@ -19,7 +19,7 @@ class Placeholder
     constructor(id: number, name: string, start_index: number, end_index: number, start_line: number, end_line: number, type?: string, index?: number)
     {
         this.start_index = start_index;
-        this.start_line = start_line
+        this.start_line = start_line;
         this.end_index = end_index;
         this.end_line = end_line;
         this.name = name;
@@ -40,7 +40,7 @@ export class PyPa
     static calculateIndex(document: string, line: number, column: number): number
     {
         var document_array = document.split('\n');
-        var index = 0
+        var index = 0;
         for(var cnt = 0; cnt < line-1; cnt++)
         {
             index += document_array[cnt].length + 1;
@@ -114,7 +114,7 @@ export class PyPa
         var index = 1;
         placeholdersTmp.forEach((placeholder: any) =>
         {
-            var insert = "{" + index + ":" + placeholder.name + "}"
+            var insert = "{" + index + ":" + placeholder.name + "}";
             snippet = PyPa.replace(snippet, placeholder.start_index, placeholder.end_index, insert);
             placeholdersTmp.forEach((other_parameter: any) =>
             {
@@ -123,14 +123,14 @@ export class PyPa
                     other_parameter.start_index += insert.length - placeholder.name.length;
                     other_parameter.end_index += insert.length - placeholder.name.length;
                 }
-            })
+            });
             placeholders.forEach((_placeholder: Placeholder) =>
             {
                 if(_placeholder.id === placeholder.id)
                 {
                     _placeholder.index = index;
                 }
-            })
+            });
             index += 1;    
         });
         return snippet;
@@ -154,9 +154,9 @@ export class PyPa
             {
                 if(_placeholder.id === placeholder.id)
                 {
-                    insert = "detType(" + "'" + _placeholder.id + "'" + ", " + placeholder.name + ")"
+                    insert = "detType(" + "'" + _placeholder.id + "'" + ", " + placeholder.name + ")";
                 }
-            })
+            });
             snippet = PyPa.replace(snippet, placeholder.start_index, placeholder.end_index, insert);
             placeholdersTmp.forEach((other_parameter: any) =>
             {
@@ -165,7 +165,7 @@ export class PyPa
                     other_parameter.start_index += insert.length - placeholder.name.length;
                     other_parameter.end_index += insert.length - placeholder.name.length;
                 }
-            })
+            });
         });
         var detType = "def detType(id, x):\n" + 
                       "    print('{\\\"id\\\": ' + str(id) + ', \\\"type\\\": ' + '\\\"' + str(type(x)) + '\\\"' + '}')\n" +
@@ -264,8 +264,8 @@ export class PyPa
         var placeholderString = "";
         placeholders.forEach((placeholder: Placeholder) =>
         {
-            placeholderString += "{" + placeholder.index + ":" + placeholder.name + ":" + placeholder.type + "}" + ", "
-        })
+            placeholderString += "{" + placeholder.index + ":" + placeholder.name + ":" + placeholder.type + "}" + ", ";
+        });
         return {body: snippet, placeholders: placeholderString};
     }
 
