@@ -117,17 +117,19 @@ export class FragmentEditor {
             <br><br><br><br><br>
             Description: <input id="description" type="text" value="${fragment.description}">
             Keywords: <input id="keywords" type="text" value="${fragment.keywords}">
-            Tags: <div class="chips chips-autocomplete"></div>
+            Tags: <div class="tags chips-autocomplete"></div>
             Prefix: <input id="prefix" type="text" value="${fragment.prefix}">
             Body: <textarea id="body" rows="16">${fragment.body}</textarea>
             <button title="Replaces Keywords, Body and Placeholders" style="float: right; margin: 10px; margin-top: 5px" onclick="parametrize()" class="btn waves-effect waves-light" type="submit" name="action">Parametrize</button>
             <br><br><br>
             Scope: <input id="scope" type="text" value="${fragment.scope}">
-            Domain: <input id="domain" type="text" value="${fragment.domain}">
+            Domain: <div class="domains chips-autocomplete"></div>
             Placeholders: <input style="color:lightgrey;" id="placeholders" type="text" value="${fragment.placeholders}" disabled>
 
             <script>
                 var tags;
+                var domains;
+
                 const vscode = acquireVsCodeApi();
                 function submitFunction() {
                     vscode.postMessage({command: 'submit', text: {
@@ -138,7 +140,7 @@ export class FragmentEditor {
                         "prefix": document.getElementById("prefix").value, 
                         "body": document.getElementById("body").value,
                         "scope": document.getElementById("scope").value,
-                        "domain": document.getElementById("domain").value,
+                        "domain": "" + domains[0].chipsData.map(chip => chip.tag).join(),
                         "placeholders": document.getElementById("placeholders").value
                     }});    
                 }
@@ -163,11 +165,20 @@ export class FragmentEditor {
                 });
 
                 document.addEventListener('DOMContentLoaded', function () {
-                    var elems = document.querySelectorAll('.chips');
-                    tags = M.Chips.init(elems, {
+                    var tagelems = document.querySelectorAll('.tags');
+                    tags = M.Chips.init(tagelems, {
                         ${this.getTagsFromFragment(fragment)}
                         autocompleteOptions: {
                             ${this.getTagList()}
+                            limit: Infinity,
+                            minLength: 1
+                        }
+                    });
+                    var domainelems = document.querySelectorAll('.domains');
+                    domains = M.Chips.init(domainelems, {
+                        ${this.getDomainsFromFragment(fragment)}
+                        autocompleteOptions: {
+                            ${this.getDomainList()}
                             limit: Infinity,
                             minLength: 1
                         }
@@ -192,6 +203,19 @@ export class FragmentEditor {
         return "data: [" + tags + "],";
     }
 
+    private getDomainsFromFragment(fragment: Fragment): string {
+        if (fragment.domain === undefined || fragment.domain === "") {
+            return "";
+        }
+
+        var domains: string = "";
+        fragment.domain.split(",").forEach(domain => {
+            domains = domains + '{ tag: "' + domain + '" },';
+        });
+
+        return "data: [" + domains + "],";
+    }
+
     private getTagList(): string {
         var tags = "";
 
@@ -200,5 +224,15 @@ export class FragmentEditor {
         });
 
         return "data: {" + tags + "},";
+    }
+
+    private getDomainList(): string {
+        var domains = "";
+
+        Database.getDomains().forEach(domain => {
+            domains = domains + " '" + domain + "': null,";
+        });
+
+        return "data: {" + domains + "},";
     }
 }
