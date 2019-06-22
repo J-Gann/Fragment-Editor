@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import {Database} from "./database";
 import {FragmentProvider} from "./fragmentProvider";
 import {FOEF} from "./parametrization";
+import { stringify } from "querystring";
 
 export class FragmentEditor {
     panel: any;
@@ -77,7 +78,10 @@ export class FragmentEditor {
         onDiskPath = vscode.Uri.file(path.join(this.context.extensionPath, 'external/materialize', 'materialize.js'));
         const js = onDiskPath.with({scheme: 'vscode-resource'});
 
-        this.panel.webview.html = this.getWebviewContent(fragment, style, js);
+        onDiskPath = vscode.Uri.file(path.join(this.context.extensionPath, 'external/materialize', 'googleicons.css'));
+        const googleicons = onDiskPath.with({scheme: 'vscode-resource'});
+
+        this.panel.webview.html = this.getWebviewContent(fragment, style, js, googleicons);
         this.panel.reveal();
     }
 
@@ -87,7 +91,7 @@ export class FragmentEditor {
         }
     }
 
-    private getWebviewContent(fragment: Fragment, style: vscode.Uri, js: vscode.Uri) {
+    private getWebviewContent(fragment: Fragment, style: vscode.Uri, js: vscode.Uri, googleicons: vscode.Uri) {
         return `<!DOCTYPE html>
         <html lang="de">
         <head>
@@ -95,12 +99,15 @@ export class FragmentEditor {
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>${fragment.label}</title>
             <link rel="stylesheet" href="${style}">
+            <link rel="stylesheet" href="${googleicons}">
             <script src="${js}"></script> 
             <style>
                 .vscode-dark input { width:100%; color:white; font-size: 15px; border: none }
                 .vscode-dark textarea { width:100%; color:white; font-size: 15px; height: auto; resize: none; }
                 .vscode-light input { width:100%; color:black; font-size: 15px; border: none }
                 .vscode-light textarea { width:100%; color:black; font-size: 15px; height: auto; resize: none; }
+                .vscode-light div .input { color: black }
+                .vscode-dark div .input { color: white }
             </style>
         </head>
         <body>
@@ -110,8 +117,7 @@ export class FragmentEditor {
             <br><br><br><br><br>
             Description: <input id="description" type="text" value="${fragment.description}">
             Keywords: <input id="keywords" type="text" value="${fragment.keywords}">
-            Tags: <div class="chips"><input id="tags" type="text" value="${fragment.tags}"></div>
-            ${this.getDataList()}
+            Tags: <div class="chips chips-autocomplete"></div>
             Prefix: <input id="prefix" type="text" value="${fragment.prefix}">
             Body: <textarea id="body" rows="16">${fragment.body}</textarea>
             <button title="Replaces Keywords, Body and Placeholders" style="float: right; margin: 10px; margin-top: 5px" onclick="parametrize()" class="btn waves-effect waves-light" type="submit" name="action">Parametrize</button>
@@ -121,13 +127,14 @@ export class FragmentEditor {
             Placeholders: <input style="color:lightgrey;" id="placeholders" type="text" value="${fragment.placeholders}" disabled>
 
             <script>
+                var tags;
                 const vscode = acquireVsCodeApi();
                 function submitFunction() {
                     vscode.postMessage({command: 'submit', text: {
                         "label":  document.getElementById("label").innerHTML ,
                         "description": document.getElementById("description").value, 
                         "keywords": document.getElementById("keywords").value,
-                        "tags": document.getElementById("tags").value,
+                        "tags": "" + tags[0].chipsData.map(chip => chip.tag).join(),
                         "prefix": document.getElementById("prefix").value, 
                         "body": document.getElementById("body").value,
                         "scope": document.getElementById("scope").value,
@@ -155,9 +162,16 @@ export class FragmentEditor {
                     }
                 });
 
-                document.addEventListener('DOMContentLoaded', function() {
+                document.addEventListener('DOMContentLoaded', function () {
                     var elems = document.querySelectorAll('.chips');
-                    var instances = M.Chips.init(elems, {});
+                    tags = M.Chips.init(elems, {
+                        ${this.getTagsFromFragment(fragment)}
+                        autocompleteOptions: {
+                            ${this.getTagList()}
+                            limit: Infinity,
+                            minLength: 1
+                        }
+                    });
                 });
             </script>
 
@@ -165,14 +179,26 @@ export class FragmentEditor {
           </html>`;
     }
 
-    private getDataList(): string {
+    private getTagsFromFragment(fragment: Fragment): string {
+        if (fragment.tags === undefined || fragment.tags === "") {
+            return "";
+        }
+
+        var tags: string = "";
+        fragment.tags.split(",").forEach(tag => {
+            tags = tags + '{ tag: "' + tag + '" },';
+        });
+
+        return "data: [" + tags + "],";
+    }
+
+    private getTagList(): string {
         var tags = "";
 
         Database.getTags().forEach(tag => {
-            tags = tags + '<option value="' + tag + '">';
+            tags = tags + " '" + tag + "': null,";
         });
 
-        console.log(tags);
-        return '<datalist id="taglist">' + tags + "</datalist>";
+        return "data: {" + tags + "},";
     }
 }
