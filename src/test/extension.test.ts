@@ -16,7 +16,7 @@ suite("Database Tests", () => {
 
 
     if (fs.existsSync(path.join(dbpath, dbname))) {
-        //fs.unlinkSync(path.join(dbpath, dbname));
+        fs.unlinkSync(path.join(dbpath, dbname));
     }
     const db: Database = new Database(dbpath, dbname);
     
@@ -24,6 +24,7 @@ suite("Database Tests", () => {
         console.log(db.getFragments());
         assert.equal(db.getFragments().length, 0);
         db.addFragment(new Fragment({label: "asd"}));
+        console.log(db.getFragments());
         assert.equal(db.getFragments().length, 1);
     });
 });
