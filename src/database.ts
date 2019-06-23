@@ -2,7 +2,7 @@ import {Fragment} from "./fragment";
 import sql = require('sql.js');
 import fs = require("fs");
 import {TreeItem} from "./treeItem";
-import * as vscode from 'vscode';
+import * as path from "path";
 
 export class Database {
     private static _fragmentDatabase: any;
@@ -10,8 +10,8 @@ export class Database {
     private static _loadedFragments: Map<string, Fragment>;
     private static _loadedTreeItems: Map<string, TreeItem>;
 
-    constructor(path: string) {
-        Database._fragmentDirectory = path;
+    constructor(dbpath: string, dbname: string) {
+        Database._fragmentDirectory = path.join(dbpath, dbname);
         Database.createFragmentDatabase();
         Database._loadedFragments = new Map();
         Database.loadFragments();
@@ -23,14 +23,14 @@ export class Database {
             fs.mkdirSync(Database._fragmentDirectory);
         }
 
-        if (!fs.existsSync(Database._fragmentDirectory + "/fragments.db")) {
+        if (!fs.existsSync(Database._fragmentDirectory)) {
             const bufferfragmentDatabase = new sql.Database();
             const data = bufferfragmentDatabase.export();
             const buffer = Buffer.from(data);
-            fs.writeFileSync(Database._fragmentDirectory + '/fragments.db', buffer);
+            fs.writeFileSync(Database._fragmentDirectory, buffer);
         }
 
-        const filebuffer = fs.readFileSync(Database._fragmentDirectory + '/fragments.db');
+        const filebuffer = fs.readFileSync(Database._fragmentDirectory);
         Database._fragmentDatabase = new sql.Database(filebuffer);
         Database._fragmentDatabase.run("CREATE TABLE IF NOT EXISTS fragments (label char PRIMARY KEY,prefix char,scope char,body char,description char,keywords char,tags char,domain char,placeholders char,snippet char);");
         Database._fragmentDatabase.run("CREATE VIEW IF NOT EXISTS v_tags AS WITH RECURSIVE split(name, rest) " +
@@ -76,7 +76,7 @@ export class Database {
     private static persist(): void {
         const data1 = Database._fragmentDatabase.export();
         const buffer1 = Buffer.from(data1);
-        fs.writeFileSync(Database._fragmentDirectory + '/fragments.db', buffer1);
+        fs.writeFileSync(Database._fragmentDirectory, buffer1);
     }
 
     static get loadedFragments(): Fragment[] {
