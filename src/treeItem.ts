@@ -76,6 +76,14 @@ export class TreeItem extends vscode.TreeItem {
         }
     }
 
+    hasTag(): boolean {
+        if (this.contextValue === "fragment") {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     set tag(tag: string | undefined) {
         if (this.contextValue === "fragment" && tag !== undefined) {
             this._tag = tag;

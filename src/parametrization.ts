@@ -106,7 +106,7 @@ export class PyPa {
             var insert = "{" + index + ":" + placeholder.name + "}";
             snippet = PyPa.replace(snippet, placeholder.start_index, placeholder.end_index, insert);
             placeholdersTmp.forEach((other_parameter: any) => {
-                if (placeholder.start_index !== other_parameter.start_index && placeholder.start_line === other_parameter.start_line) {
+                if (placeholder.start_index !== other_parameter.start_index && placeholder.start_line <= other_parameter.start_line) {
                     other_parameter.start_index += insert.length - placeholder.name.length;
                     other_parameter.end_index += insert.length - placeholder.name.length;
                 }
@@ -140,7 +140,7 @@ export class PyPa {
             });
             snippet = PyPa.replace(snippet, placeholder.start_index, placeholder.end_index, insert);
             placeholdersTmp.forEach((other_parameter: any) => {
-                if (placeholder.start_index !== other_parameter.start_index && placeholder.start_line === other_parameter.start_line) {
+                if (placeholder.start_index !== other_parameter.start_index && placeholder.start_line <= other_parameter.start_line) {
                     other_parameter.start_index += insert.length - placeholder.name.length;
                     other_parameter.end_index += insert.length - placeholder.name.length;
                 }
@@ -230,16 +230,19 @@ export class PyPa {
      * @param textDocument
      * @param selection
      */
-    static parametrize(textDocument: vscode.TextDocument, selection: vscode.Selection): Promise<{ body: string, placeholders: string }> {
+    static parametrize(textDocument: vscode.TextDocument, selection: vscode.Selection): Promise<{ body: string, placeholders: string }> | undefined {
         var document = textDocument.getText();
         var snippet = textDocument.getText(new vscode.Range(selection.start, selection.end));
         var placeholders = PyPa.findPlaceholders(snippet);
-        var parametrizedSnippet = PyPa.parametrizeSnippet(snippet, placeholders);
-        var snippet_start_index = PyPa.calculateIndex(document, selection.start.line + 1, selection.start.character);
-        var snippet_end_index = PyPa.calculateIndex(document, selection.end.line + 1, selection.end.character);
-        var script = PyPa.createScript(placeholders, document, snippet, snippet_start_index, snippet_end_index);
-        console.log(script);
-        return this.executeScript(script, placeholders, parametrizedSnippet);
+        if (placeholders.length !== 0)
+        {
+            var parametrizedSnippet = PyPa.parametrizeSnippet(snippet, placeholders);
+            var snippet_start_index = PyPa.calculateIndex(document, selection.start.line + 1, selection.start.character);
+            var snippet_end_index = PyPa.calculateIndex(document, selection.end.line + 1, selection.end.character);
+            var script = PyPa.createScript(placeholders, document, snippet, snippet_start_index, snippet_end_index);
+            console.log(script)
+            return this.executeScript(script, placeholders, parametrizedSnippet);
+        }
     }
 
     static parametrize_test(snippet: string, document: string, snippet_start_index: number, snippet_end_index: number) {
