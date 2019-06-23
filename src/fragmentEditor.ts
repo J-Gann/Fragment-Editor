@@ -48,7 +48,7 @@ export class FragmentEditor {
                         domain: message.text.domain,
                         placeholders: message.text.placeholders
                     });
-                    Database.updateFragment(newFragment);
+                    Database.getInstance().updateFragment(newFragment);
                     this.fragmentProvider.refresh();
                     this.panel.dispose();
                     this.panel.onDidDispose();
@@ -214,7 +214,7 @@ export class FragmentEditor {
     private getTagList(): string {
         var tags = "";
 
-        Database.getTags().forEach(tag => {
+        Database.getInstance().getTags().forEach(tag => {
             tags = tags + " '" + tag + "': null,";
         });
 
@@ -224,7 +224,7 @@ export class FragmentEditor {
     private getDomainList(): string {
         var domains = "";
 
-        Database.getDomains().forEach(domain => {
+        Database.getInstance().getDomains().forEach(domain => {
             domains = domains + " '" + domain + "': null,";
         });
 

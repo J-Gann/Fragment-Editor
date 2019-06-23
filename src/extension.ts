@@ -7,7 +7,7 @@ import {TreeItem} from './treeItem';
 import * as path from "path";
 
 export function activate(context: vscode.ExtensionContext) {
-    var database = new Database(path.join(context.extensionPath, "data"), "fragments.db");
+    Database.setDefaultPath(path.join(context.extensionPath, "data"));
     const fragmentProvider = new FragmentProvider(context);
     var treeView = vscode.window.createTreeView('fragmentEditor', {treeDataProvider: fragmentProvider});
     vscode.commands.registerCommand('fragmentEditor.addFragment', () => fragmentProvider.addFragment());

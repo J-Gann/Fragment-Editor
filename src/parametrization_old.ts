@@ -84,7 +84,7 @@ class Placeholder {
     static placeholderExists(identification: string): boolean {
         var result = false;
         Placeholder.placeholders.forEach(placeholder => {
-            if (placeholder._identification == identification) {
+            if (placeholder._identification === identification) {
                 result = true;
             }
         });
@@ -450,7 +450,7 @@ export class FOEF {
         keywordArrays.forEach((keywordArray: string[]) => {
             var fragments: Fragment[] = [];
             keywordArray.forEach((keyword: string) => {
-                Database.getFilteredFragments('keyword:' + keyword).forEach((fragment: Fragment) => {
+                Database.getInstance().getFilteredFragments('keyword:' + keyword).forEach((fragment: Fragment) => {
                     fragments.push(fragment);
                 });
             });

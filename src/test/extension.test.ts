@@ -1,10 +1,8 @@
-//
-// Note: This example test is leveraging the Mocha test framework.
-// Please refer to their documentation on https://mochajs.org/ for help.
-//
-
-// The module 'assert' provides assertion methods from node
 import {Database} from '../database';
+import * as assert from 'assert';
+import * as path from 'path';
+import * as fs from 'fs';
+import { Fragment } from '../fragment';
 
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
@@ -12,8 +10,28 @@ import {Database} from '../database';
 // import * as myExtension from '../extension';
 
 // Defines a Mocha test suite to group tests of similar kind together
-suite("Extension Tests", function () {
-    test("fragmentProvider Test", function () {
-        new Database("./testdata");
+suite("Database Tests", () => {
+    const dbpath = path.join(require('os').homedir(), "fragments");
+    const dbname = "testdb.db";
+
+
+    if (fs.existsSync(path.join(dbpath, dbname))) {
+        //fs.unlinkSync(path.join(dbpath, dbname));
+    }
+    const database: Database = new Database(dbpath, dbname);
+    
+    test("Adding functions", function () {
+        const db: Database = Database.getInstance();
+        console.log(db.getFragments());
+        assert.equal(db.getFragments().length, 0);
+        db.addFragment(new Fragment({label: "asd"}));
+        assert.equal(db.getFragments().length, 1);
+    });
+});
+
+suite("Array Tests", () => {
+    test("Array index", function() {
+        assert.equal(-1, [1, 2, 3].indexOf(5));
+        assert.equal(-1, [1, 2, 3].indexOf(0));
     });
 });
