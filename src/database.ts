@@ -1,49 +1,69 @@
-import { Fragment } from "./fragment";
+import {Fragment} from "./fragment";
 import sql = require('sql.js');
 import fs = require("fs");
-import { TreeItem } from "./treeItem";
-import * as vscode from 'vscode';
+import {TreeItem} from "./treeItem";
+import * as path from "path";
 
 export class Database {
-    private static _fragmentDatabase: any;
-    private static _fragmentDirectory: string;
-    private static _loadedFragments: Map<string, Fragment>;
-    private static _loadedTreeItems: Map<string, TreeItem>;
+    private static _default_path: string;
+    private static _instance: Database;
+    
+    private _fragmentDatabase: any;
+    private _fragmentFile: string;
+    private _fragmentPath: string;
+    private _loadedFragments: Map<string, Fragment>;
+    private _loadedTreeItems: Map<string, TreeItem>;
 
-    constructor(path: string) {
-        Database._fragmentDirectory = path;
-        Database.createFragmentDatabase();
-        Database._loadedFragments = new Map();
-        Database.loadFragments();
-        Database._loadedTreeItems = new Map();
+    constructor(dbpath: string, dbname: string) {
+        this._fragmentFile = path.join(dbpath, dbname);
+        this._fragmentPath = dbpath;
+        this.createFragmentDatabase();
+        this._loadedFragments = new Map();
+        this.loadFragments();
+        this._loadedTreeItems = new Map();
     }
 
-    static createFragmentDatabase(): void {
-        if (!fs.existsSync(Database._fragmentDirectory)) {
-            fs.mkdirSync(Database._fragmentDirectory);
+    static getInstance(): Database {
+        if ( Database._instance === undefined ) {
+
+            if (Database._default_path === undefined) {
+                Database._default_path = path.join(require('os').homedir(), "fragments");
+            }
+          Database._instance = new Database(Database._default_path, "fragments.db");
+        }
+        return Database._instance;
+    }
+
+    static setDefaultPath(path: string) : void {
+        this._default_path = path;
+    }
+
+    createFragmentDatabase(): void {
+        if (!fs.existsSync(this._fragmentPath)) {
+            fs.mkdirSync(this._fragmentPath);
         }
 
-        if (!fs.existsSync(Database._fragmentDirectory + "/fragments.fragmentDatabase")) {
+        if (!fs.existsSync(this._fragmentFile)) {
             const bufferfragmentDatabase = new sql.Database();
             const data = bufferfragmentDatabase.export();
             const buffer = Buffer.from(data);
-            fs.writeFileSync(Database._fragmentDirectory + '/fragments.fragmentDatabase', buffer);
+            fs.writeFileSync(this._fragmentFile, buffer);
         }
 
-        const filebuffer = fs.readFileSync(Database._fragmentDirectory + '/fragments.fragmentDatabase');
-        Database._fragmentDatabase = new sql.Database(filebuffer);
-        Database._fragmentDatabase.run("CREATE TABLE IF NOT EXISTS fragments (label char PRIMARY KEY,prefix char,scope char,body char,description char,keywords char,tags char,domain char,placeholders char,snippet char);");
-        Database._fragmentDatabase.run("CREATE VIEW IF NOT EXISTS v_tags AS WITH RECURSIVE split(name, rest) " +
+        const filebuffer = fs.readFileSync(this._fragmentFile);
+        this._fragmentDatabase = new sql.Database(filebuffer);
+        this._fragmentDatabase.run("CREATE TABLE IF NOT EXISTS fragments (label char PRIMARY KEY,prefix char,scope char,body char,description char,keywords char,tags char,domain char,placeholders char,snippet char);");
+        this._fragmentDatabase.run("CREATE VIEW IF NOT EXISTS v_tags AS WITH RECURSIVE split(name, rest) " +
             " AS (SELECT '', tags || ',' FROM fragments UNION ALL SELECT substr(rest, 0, instr(rest, ',')), substr(rest, instr(rest, ',')+1) " +
             "FROM split WHERE rest <> '') SELECT distinct name FROM split WHERE name <> '' ORDER BY name;");
-        Database._fragmentDatabase.run("CREATE VIEW IF NOT EXISTS v_domains AS WITH RECURSIVE split(name, rest) " +
+        this._fragmentDatabase.run("CREATE VIEW IF NOT EXISTS v_domains AS WITH RECURSIVE split(name, rest) " +
             " AS (SELECT '', domain || ',' FROM fragments UNION ALL SELECT substr(rest, 0, instr(rest, ',')), substr(rest, instr(rest, ',')+1) " +
             "FROM split WHERE rest <> '') SELECT distinct name FROM split WHERE name <> '' ORDER BY name;");
-        Database.persist();
+        this.persist();
     }
 
-    private static loadFragments(): void {
-        const res = Database._fragmentDatabase.exec("SELECT * FROM fragments")[0];
+    private loadFragments(): void {
+        const res = this._fragmentDatabase.exec("SELECT * FROM fragments")[0];
         if (res === undefined) {
             return;
         }
@@ -58,42 +78,51 @@ export class Database {
             var tags = element[6];
             var domain = element[7];
             var placeholders = element[8];
-            var newFragment = new Fragment({ label: label, prefix: prefix, scope: scope, body: body, description: description, keywords: keywords, tags: tags, domain: domain, placeholders: placeholders });
-            Database._loadedFragments.set(label, newFragment);
+            var newFragment = new Fragment({
+                label: label,
+                prefix: prefix,
+                scope: scope,
+                body: body,
+                description: description,
+                keywords: keywords,
+                tags: tags,
+                domain: domain,
+                placeholders: placeholders
+            });
+            this._loadedFragments.set(label, newFragment);
         });
     }
 
-    private static persist(): void {
-        const data1 = Database._fragmentDatabase.export();
+    private persist(): void {
+        const data1 = this._fragmentDatabase.export();
         const buffer1 = Buffer.from(data1);
-        fs.writeFileSync(Database._fragmentDirectory + '/fragments.fragmentDatabase', buffer1);
+        fs.writeFileSync(this._fragmentFile, buffer1);
     }
 
-    static get loadedFragments(): Fragment[] {
-        return Array.from(Database._loadedFragments.values());
+    get loadedFragments(): Fragment[] {
+        return Array.from(this._loadedFragments.values());
     }
 
     /**
      * Return all fragments or the ones which labels were given
      * @param labels Labels for which fragments should be returned
      */
-    static getFragments(labels?: (string | undefined)[]): Fragment[] {
+    getFragments(labels?: (string | undefined)[]): Fragment[] {
         if (labels !== undefined) {
             var fragments: Fragment[] = [];
             labels.forEach((label: string | undefined) => {
                 var occuredLabels: string[] = [];
                 if (label !== undefined && !occuredLabels.includes(label)) {
                     occuredLabels.push(label);
-                    var fragment = Database._loadedFragments.get(label);
+                    var fragment = this._loadedFragments.get(label);
                     if (fragment !== undefined) {
                         fragments.push(fragment);
                     }
                 }
             });
             return fragments;
-        }
-        else {
-            return Array.from(Database._loadedFragments.values());
+        } else {
+            return Array.from(this._loadedFragments.values());
         }
     }
 
@@ -101,12 +130,11 @@ export class Database {
      * Return the Fragment with the given label
      * @param label Label of the Fragment
      */
-    static getFragment(label: string): Fragment | undefined {
-        var fragment = Database._loadedFragments.get(label);
+    getFragment(label: string): Fragment | undefined {
+        var fragment = this._loadedFragments.get(label);
         if (fragment !== undefined) {
             return fragment;
-        }
-        else {
+        } else {
             console.log("[W] | [Database | getFragment]: Failed for parameter: " + label);
             return undefined;
         }
@@ -116,15 +144,14 @@ export class Database {
      * Adds the given Fragment to the Database
      * @param fragment Fragment to be added
      */
-    static addFragment(fragment: Fragment | undefined): boolean {
-        if (fragment === undefined || Database._loadedFragments.has(fragment.label)) {
+    addFragment(fragment: Fragment | undefined): boolean {
+        if (fragment === undefined || this._loadedFragments.has(fragment.label)) {
             console.log("[W] | [Database | addFragment]: Failed for fragment: " + fragment);
             return false;
-        }
-        else {
-            Database._loadedFragments.set(fragment.label, fragment);
-            Database._fragmentDatabase.run("INSERT INTO fragments VALUES (?,?,?,?,?,?,?,?,?,?)", [fragment.label, fragment.prefix, fragment.scope, fragment.body, fragment.description, fragment.keywords, fragment.tags, fragment.domain, fragment.placeholders, fragment.snippet]);
-            Database.persist();
+        } else {
+            this._loadedFragments.set(fragment.label, fragment);
+            this._fragmentDatabase.run("INSERT INTO fragments VALUES (?,?,?,?,?,?,?,?,?,?)", [fragment.label, fragment.prefix, fragment.scope, fragment.body, fragment.description, fragment.keywords, fragment.tags, fragment.domain, fragment.placeholders, fragment.snippet]);
+            this.persist();
             return true;
         }
     }
@@ -133,14 +160,13 @@ export class Database {
      * Delete a Fragment from the Database
      * @param label Label of Fragment
      */
-    static deleteFragment(label: string | undefined): boolean {
-        if (label !== undefined && Database._loadedFragments.has(label)) {
-            Database._loadedFragments.delete(label);
-            Database._fragmentDatabase.run("DELETE FROM fragments WHERE label=?", [label]);
-            Database.persist();
+    deleteFragment(label: string | undefined): boolean {
+        if (label !== undefined && this._loadedFragments.has(label)) {
+            this._loadedFragments.delete(label);
+            this._fragmentDatabase.run("DELETE FROM fragments WHERE label=?", [label]);
+            this.persist();
             return true;
-        }
-        else {
+        } else {
             console.log("[W] | [Database | deleteFragment]: Failed for label: " + label);
             return false;
         }
@@ -150,24 +176,23 @@ export class Database {
      * Replace a Fragment with the same label as the given Fragment
      * @param fragment Fragment as it should be in the Database
      */
-    static updateFragment(fragment: Fragment | undefined): boolean {
-        if (fragment !== undefined && Database._loadedFragments.get(fragment.label) !== undefined) {
-            Database._loadedFragments.set(fragment.label, fragment);
-            Database._fragmentDatabase.run("UPDATE fragments SET prefix=? , scope=?, body=?, description=?, keywords=?, tags=?, domain=?, placeholders=? WHERE label=?", [fragment.prefix, fragment.scope, fragment.body, fragment.description, fragment.keywords, fragment.tags, fragment.domain, fragment.placeholders, fragment.label]);
-            Database.persist();
+    updateFragment(fragment: Fragment | undefined): boolean {
+        if (fragment !== undefined && this._loadedFragments.get(fragment.label) !== undefined) {
+            this._loadedFragments.set(fragment.label, fragment);
+            this._fragmentDatabase.run("UPDATE fragments SET prefix=? , scope=?, body=?, description=?, keywords=?, tags=?, domain=?, placeholders=? WHERE label=?", [fragment.prefix, fragment.scope, fragment.body, fragment.description, fragment.keywords, fragment.tags, fragment.domain, fragment.placeholders, fragment.label]);
+            this.persist();
             return true;
-        }
-        else {
+        } else {
             console.log("[W] | [Database | updateFragment]: Failed for fragment: " + fragment);
             return false;
         }
     }
 
-    static get loadedTreeItems(): TreeItem[] {
-        return Array.from(Database._loadedTreeItems.values());
+    get loadedTreeItems(): TreeItem[] {
+        return Array.from(this._loadedTreeItems.values());
     }
 
-    static set loadedTreeItems(treeItems: TreeItem[]) {
+    set loadedTreeItems(treeItems: TreeItem[]) {
         this._loadedTreeItems.clear();
         treeItems.forEach((treeItem: TreeItem) => {
             if (treeItem.label !== undefined) {
@@ -180,12 +205,11 @@ export class Database {
      * Adds the TreeItem to the database
      * @param treeItem TreeItem to be added
      */
-    static addTreeItem(treeItem: TreeItem | undefined): boolean {
+    addTreeItem(treeItem: TreeItem | undefined): boolean {
         if (treeItem !== undefined && treeItem.label !== undefined && !this._loadedTreeItems.has(treeItem.label)) {
             this._loadedTreeItems.set(treeItem.label, treeItem);
             return true;
-        }
-        else {
+        } else {
             console.log("[W] | [Database | addTreeItem]: Failed for TreeItem: " + treeItem);
             return false;
         }
@@ -195,12 +219,11 @@ export class Database {
      * Deletes the TreeItem from the database
      * @param label Label of TreeItem to be deleted
      */
-    static deleteTreeItem(label: string | undefined): boolean {
-        if (label !== undefined && Database._loadedTreeItems.has(label)) {
-            Database._loadedTreeItems.delete(label);
+    deleteTreeItem(label: string | undefined): boolean {
+        if (label !== undefined && this._loadedTreeItems.has(label)) {
+            this._loadedTreeItems.delete(label);
             return true;
-        }
-        else {
+        } else {
             console.log("[W] | [Database | deleteTreeItem]: Failed for label: " + label);
             return false;
         }
@@ -210,12 +233,11 @@ export class Database {
      * Replaces TreeItem with the same label as the given TreeItem
      * @param treeItem TreeItem as it should be in the Database
      */
-    static updateTreeItem(treeItem: TreeItem | undefined): boolean {
-        if (treeItem !== undefined && treeItem.label !== undefined && Database._loadedTreeItems.has(treeItem.label)) {
-            Database._loadedTreeItems.set(treeItem.label, treeItem);
+    updateTreeItem(treeItem: TreeItem | undefined): boolean {
+        if (treeItem !== undefined && treeItem.label !== undefined && this._loadedTreeItems.has(treeItem.label)) {
+            this._loadedTreeItems.set(treeItem.label, treeItem);
             return true;
-        }
-        else {
+        } else {
             console.log("[W] | [Database | updateTreeItem]: Failed for TreeItem: " + treeItem);
             return false;
         }
@@ -225,11 +247,10 @@ export class Database {
      * Return the TreeItem with the given label
      * @param label Label of the TreeItem
      */
-    static getTreeItem(label: string | undefined): TreeItem | undefined {
+    getTreeItem(label: string | undefined): TreeItem | undefined {
         if (label !== undefined && this._loadedTreeItems.has(label)) {
             return this._loadedTreeItems.get(label);
-        }
-        else {
+        } else {
             // console.log("[W] | [Database | getTreeItem]: Failed for label: " + label);
             return undefined;
         }
@@ -239,34 +260,33 @@ export class Database {
      * Return all Treeitems or the ones which labels were given
      * @param labels List of labels for TreeItems to be returned
      */
-    static getTreeItems(labels?: (string | undefined)[] | undefined): TreeItem[] {
+    getTreeItems(labels?: (string | undefined)[] | undefined): TreeItem[] {
         if (labels !== undefined) {
             var treeItems: TreeItem[] = [];
             labels.forEach((label: string | undefined) => {
                 var occuredLabels: string[] = [];
                 if (label !== undefined && !occuredLabels.includes(label)) {
                     occuredLabels.push(label);
-                    var treeItem = Database._loadedTreeItems.get(label);
+                    var treeItem = this._loadedTreeItems.get(label);
                     if (treeItem !== undefined) {
                         treeItems.push(treeItem);
                     }
                 }
             });
             return treeItems;
-        }
-        else {
-            return Array.from(Database._loadedTreeItems.values());
+        } else {
+            return Array.from(this._loadedTreeItems.values());
         }
     }
 
-    static getFilteredFragments(filter: string): Fragment[] {
+    getFilteredFragments(filter: string): Fragment[] {
         if (filter === "") {
-            return Array.from(Database._loadedFragments.values());
+            return Array.from(this._loadedFragments.values());
         }
 
         var filterList = filter.split(",");
 
-        let fragmentList: Fragment[] = Array.from(Database._loadedFragments.values());
+        let fragmentList: Fragment[] = Array.from(this._loadedFragments.values());
 
         filterList.forEach((filterElement: string) => {
             if (filterElement.includes("label:") && filterElement.indexOf("label:") === 0) // Filtern nach Fragmenten, die die gesuchte Label als Substring haben
@@ -305,10 +325,10 @@ export class Database {
         return fragmentList;
     }
 
-    static getTags(): string[] {
+    getTags(): string[] {
         let tags: string[] = [];
 
-        const res = Database._fragmentDatabase.exec("SELECT * FROM v_tags")[0];
+        const res = this._fragmentDatabase.exec("SELECT * FROM v_tags")[0];
         if (res === undefined) {
             return tags;
         }
@@ -321,10 +341,10 @@ export class Database {
         return tags;
     }
 
-    static getDomains(): string[] {
+    getDomains(): string[] {
         let domains: string[] = [];
 
-        const res = Database._fragmentDatabase.exec("SELECT * FROM v_domains")[0];
+        const res = this._fragmentDatabase.exec("SELECT * FROM v_domains")[0];
         if (res === undefined) {
             return domains;
         }
@@ -335,5 +355,9 @@ export class Database {
         });
 
         return domains;
+    }
+
+    clearTreeItems(): void {
+        this.loadedTreeItems = [];
     }
 }

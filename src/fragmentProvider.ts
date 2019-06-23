@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
-import {Fragment} from "./fragment";
-import {Database} from './database';
-import {FragmentEditor} from './fragmentEditor';
-import {PyPa} from './parametrization';
-import {TreeItem} from './treeItem';
+import { Fragment } from "./fragment";
+import { Database } from './database';
+import { FragmentEditor } from './fragmentEditor';
+import { FOEF, PyPa } from './parametrization';
+import { TreeItem } from './treeItem';
 
 /**
  * Provides TreeItems that should be displayed in a tree view
@@ -24,10 +24,11 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
      * Creates all necessary TreeItems after it deletes all previous TreeItems
      */
     createTreeStructure() {
+        const db: Database = Database.getInstance();
         // Clear existing TreeItems
-        Database.loadedTreeItems = [];
+        db.loadedTreeItems = [];
 
-        const fragments = Database.getFragments();
+        const fragments = db.getFragments();
         if (fragments !== undefined) {
             fragments.forEach((fragment: Fragment) => {
                 if (fragment !== undefined) {
@@ -36,9 +37,9 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
                         const tagList = tags.split(',');
                         tagList.forEach((tag: string) => {
                             if (tag.length !== 0 && tag !== ',') {
-                                if (Database.getTreeItem(tag) === undefined) {
-                                    const newTag = new TreeItem({label: tag, contextValue: "tag"});
-                                    Database.addTreeItem(newTag);
+                                if (db.getTreeItem(tag) === undefined) {
+                                    const newTag = new TreeItem({ label: tag, contextValue: "tag" });
+                                    db.addTreeItem(newTag);
                                 }
                                 const newFragment = new TreeItem({
                                     label: fragment.label + " [TAG:" + tag + "]",
@@ -46,8 +47,8 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
                                     tag: tag,
                                     fragment: fragment.label
                                 });
-                                Database.addTreeItem(newFragment);
-                                const tagTreeItem = Database.getTreeItem(tag);
+                                db.addTreeItem(newFragment);
+                                const tagTreeItem = db.getTreeItem(tag);
                                 if (tagTreeItem !== undefined) {
                                     tagTreeItem.addChild(newFragment.label);
                                 }
@@ -59,7 +60,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
                             contextValue: "fragment",
                             fragment: fragment.label
                         });
-                        Database.addTreeItem(treeItem);
+                        db.addTreeItem(treeItem);
                     }
                 }
             });
@@ -74,8 +75,9 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
      * Return list of fragments that are displayed in the tree
      */
     getChildren(element?: TreeItem): Thenable<TreeItem[]> {
+        const db: Database = Database.getInstance();
         if (element !== undefined) {
-            const elementList = Database.getTreeItems(element.childs);
+            const elementList = db.getTreeItems(element.childs);
             if (elementList !== undefined) {
                 return Promise.resolve(elementList);
             } else {
@@ -83,7 +85,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
                 return Promise.resolve([]);
             }
         } else {
-            const rootList = Database.getTreeItems();
+            const rootList = db.getTreeItems();
             if (rootList !== undefined) {
                 return Promise.resolve(rootList.filter((treeItem: TreeItem) => {
                     return !!(treeItem !== undefined && treeItem.label !== undefined && treeItem.tag === undefined);
@@ -108,8 +110,9 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
      * @param treeItem
      */
     editFragment(treeItem: TreeItem | undefined): void {
-        if (treeItem !== undefined && treeItem.contextValue === "fragment" && treeItem.fragment !== undefined && Database.getFragment(treeItem.fragment) !== undefined) {
-            this._fragmentEditor.showFragment(Database.getFragment(treeItem.fragment));
+        const db: Database = Database.getInstance();
+        if (treeItem !== undefined && treeItem.contextValue === "fragment" && treeItem.fragment !== undefined && db.getFragment(treeItem.fragment) !== undefined) {
+            this._fragmentEditor.showFragment(db.getFragment(treeItem.fragment));
             this.refresh();
         } else {
             console.log("[W] | [FragmentProvider | editFragment]: Can not edit Fragment with the label: " + treeItem!.label);
@@ -120,18 +123,21 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
      * Creates a new fragment by opening a input dialog to enter a new label
      */
     addFragment(): void {
-        const editor = vscode.window.activeTextEditor;
-        let selection: vscode.Selection;
-        let textDocument: vscode.TextDocument;
-        let text: string = "";
+        var editor = vscode.window.activeTextEditor;
+        var selection: vscode.Selection;
+        var textDocument: vscode.TextDocument;
+
+        const db: Database = Database.getInstance();
 
         if (editor) {
             selection = editor.selection;
             textDocument = editor.document;
-            text = textDocument.getText(new vscode.Range(selection.start, selection.end));
+        } else {
+            vscode.window.showErrorMessage("No editor found");
+            console.log("[W] | [FragmentProvider | addFragment]: Failed");
         }
 
-        const input = vscode.window.showInputBox({prompt: "Input a label for the Fragment"});
+        const input = vscode.window.showInputBox({ prompt: "Input a label for the Fragment" });
         input.then((label) => {
             if (label === "") {
                 vscode.window.showErrorMessage("Fragment Not Added (no empty label allowed)");
@@ -139,20 +145,41 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
             } else if (label === undefined) {
                 vscode.window.showErrorMessage("Fragment Not Added");
                 console.log("[W] | [FragmentProvider | addFragment]: Failed");
-            } else if (Database.getTreeItem(label)) {
+            } else if (db.getTreeItem(label)) {
                 vscode.window.showErrorMessage("Fragment Not Added (label has to be unique)");
                 console.log("[W] | [FragmentProvider | addFragment]: Failed");
             } else {
                 //var obj = FOEF.parametrize(text);
                 //var newFragment = new Fragment({...{label: label}, ...obj});
                 //Database.addFragment(newFragment);
-                PyPa.parametrize(text).then((obj) => {
-                    const newFragment = new Fragment({...{label: label}, ...obj});
-                    Database.addFragment(newFragment);
+                if (textDocument.fileName.match(/.*\.py$/) && editor !== undefined) {
+                    PyPa.parametrize(textDocument, selection).then(obj => {
+                        var newFragment = new Fragment({ ...{ label: label }, ...obj });
+                        db.addFragment(newFragment);
+                        this.refresh();
+                        vscode.window.showInformationMessage("Successfully Added Parametrized Fragment");
+                    },
+                        (err: any) => {
+                            vscode.window.showErrorMessage("Parametrization Failed. Python Code not executable?");
+                            var body = textDocument.getText(new vscode.Range(selection.start, selection.end));
+                            var newFragment = new Fragment({ label: label, body: body });
+                            db.addFragment(newFragment);
+                            this.refresh();
+                            vscode.window.showInformationMessage("Added Fragment without Parametrization");
+                        });
+                } else if (editor !== undefined && selection !== undefined) {
+                    var body = textDocument.getText(new vscode.Range(selection.start, selection.end));
+                    var newFragment = new Fragment({ label: label, body: body });
+                    db.addFragment(newFragment);
+                    if (!textDocument.fileName.match(/.*\.py$/)) {
+                        vscode.window.showInformationMessage("Parametrization only Supported for Python");
+                    }
                     this.refresh();
-                });
+                } else {
+                    var newFragment = new Fragment({ label: label });
+                    db.addFragment(newFragment);
+                }
             }
-            this.refresh();
         });
     }
 
@@ -161,14 +188,15 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
      * @param treeItem
      */
     deleteTreeItem(treeItem: TreeItem): void {
-        if (treeItem.contextValue === "fragment" && treeItem.fragment !== undefined && Database.getFragment(treeItem.fragment) !== undefined) {
-            const fragment = Database.getFragment(treeItem.fragment);
+        const db: Database = Database.getInstance();
+        if (treeItem.contextValue === "fragment" && treeItem.fragment !== undefined && db.getFragment(treeItem.fragment) !== undefined) {
+            const fragment = db.getFragment(treeItem.fragment);
             if (fragment !== undefined) {
                 if (fragment.tags !== undefined && fragment.tags.length === 0) {
-                    Database.deleteFragment(fragment.label);
+                    db.deleteFragment(fragment.label);
                 } else if (fragment.tags !== undefined) {
                     fragment.removeTag(treeItem.tag);
-                    Database.updateFragment(fragment);
+                    db.updateFragment(fragment);
                 }
                 this.refresh();
             } else {

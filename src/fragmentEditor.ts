@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import {Database} from "./database";
 import {FragmentProvider} from "./fragmentProvider";
 import {FOEF} from "./parametrization";
-import { stringify } from "querystring";
+import {PyPa} from "./parametrization_old";
 
 export class FragmentEditor {
     panel: any;
@@ -48,13 +48,10 @@ export class FragmentEditor {
                         domain: message.text.domain,
                         placeholders: message.text.placeholders
                     });
-                    Database.updateFragment(newFragment);
+                    Database.getInstance().updateFragment(newFragment);
                     this.fragmentProvider.refresh();
                     this.panel.dispose();
                     this.panel.onDidDispose();
-                    return;
-                case 'parametrize':
-                    this.panel.postMessage({command: 'parametrize', text: FOEF.parametrize(message.text)});
                     return;
             }
         }, undefined, this.context.subscriptions);
@@ -120,8 +117,6 @@ export class FragmentEditor {
             Tags: <div class="tags chips-autocomplete"></div>
             Prefix: <input id="prefix" type="text" value="${fragment.prefix}">
             Body: <textarea id="body" rows="16">${fragment.body}</textarea>
-            <button title="Replaces Keywords, Body and Placeholders" style="float: right; margin: 10px; margin-top: 5px" onclick="parametrize()" class="btn waves-effect waves-light" type="submit" name="action">Parametrize</button>
-            <br><br><br>
             Scope: <input id="scope" type="text" value="${fragment.scope}">
             Domain: <div class="domains chips-autocomplete"></div>
             Placeholders: <input style="color:lightgrey;" id="placeholders" type="text" value="${fragment.placeholders}" disabled>
@@ -219,7 +214,7 @@ export class FragmentEditor {
     private getTagList(): string {
         var tags = "";
 
-        Database.getTags().forEach(tag => {
+        Database.getInstance().getTags().forEach(tag => {
             tags = tags + " '" + tag + "': null,";
         });
 
@@ -229,7 +224,7 @@ export class FragmentEditor {
     private getDomainList(): string {
         var domains = "";
 
-        Database.getDomains().forEach(domain => {
+        Database.getInstance().getDomains().forEach(domain => {
             domains = domains + " '" + domain + "': null,";
         });
 
@@ -238,5 +233,5 @@ export class FragmentEditor {
 
     private formatForHtml(input: string): string {
         return input.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    } 
+    }
 }

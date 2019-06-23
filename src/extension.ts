@@ -4,9 +4,10 @@ import * as vscode from 'vscode';
 import {FragmentProvider} from './fragmentProvider';
 import {Database} from './database';
 import {TreeItem} from './treeItem';
+import * as path from "path";
 
 export function activate(context: vscode.ExtensionContext) {
-    var database = new Database(context.extensionPath + "/data");
+    Database.setDefaultPath(path.join(context.extensionPath, "data"));
     const fragmentProvider = new FragmentProvider(context);
     var treeView = vscode.window.createTreeView('fragmentEditor', {treeDataProvider: fragmentProvider});
     vscode.commands.registerCommand('fragmentEditor.addFragment', () => fragmentProvider.addFragment());
@@ -14,4 +15,5 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('fragmentEditor.deleteTreeItem', (treeItem: TreeItem) => fragmentProvider.deleteTreeItem(treeItem));
 }
 
-export function deactivate() { }
+export function deactivate() {
+}
