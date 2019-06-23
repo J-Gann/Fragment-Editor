@@ -88,7 +88,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
             const rootList = db.getTreeItems();
             if (rootList !== undefined) {
                 return Promise.resolve(rootList.filter((treeItem: TreeItem) => {
-                    return !!(treeItem !== undefined && treeItem.label !== undefined && treeItem.hasTag());
+                    return !!(treeItem !== undefined && treeItem.label !== undefined && treeItem.hasTag() === false);
                 }));
             } else {
                 console.log("[E] | [FragmentProvider | getChildren]: List of TreeItems undefined");
