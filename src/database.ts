@@ -24,13 +24,14 @@ export class Database {
     }
 
     static getInstance(): Database {
-        if ( this._instance === null ) {
-            if (this._default_path === null) {
-                this._default_path = path.join(require('os').homedir(), "fragments");
+        if ( Database._instance === undefined ) {
+
+            if (Database._default_path === undefined) {
+                Database._default_path = path.join(require('os').homedir(), "fragments");
             }
-          this._instance = new Database(Database._default_path, "fragments.db");
+          Database._instance = new Database(Database._default_path, "fragments.db");
         }
-        return this._instance;
+        return Database._instance;
     }
 
     static setDefaultPath(path: string) : void {
@@ -354,5 +355,9 @@ export class Database {
         });
 
         return domains;
+    }
+
+    clearTreeItems(): void {
+        this.loadedTreeItems = [];
     }
 }

@@ -25,6 +25,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
      */
     createTreeStructure() {
         const db: Database = Database.getInstance();
+        console.log(db);
         // Clear existing TreeItems
         db.loadedTreeItems = [];
 
