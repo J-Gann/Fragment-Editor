@@ -6,12 +6,14 @@ import * as path from "path";
 
 export class Database {
     private static _fragmentDatabase: any;
-    private static _fragmentDirectory: string;
+    private static _fragmentFile: string;
+    private static _fragmentPath: string;
     private static _loadedFragments: Map<string, Fragment>;
     private static _loadedTreeItems: Map<string, TreeItem>;
 
     constructor(dbpath: string, dbname: string) {
-        Database._fragmentDirectory = path.join(dbpath, dbname);
+        Database._fragmentFile = path.join(dbpath, dbname);
+        Database._fragmentPath = dbpath;
         Database.createFragmentDatabase();
         Database._loadedFragments = new Map();
         Database.loadFragments();
@@ -19,18 +21,18 @@ export class Database {
     }
 
     static createFragmentDatabase(): void {
-        if (!fs.existsSync(Database._fragmentDirectory)) {
-            fs.mkdirSync(Database._fragmentDirectory);
+        if (!fs.existsSync(Database._fragmentPath)) {
+            fs.mkdirSync(Database._fragmentPath);
         }
 
-        if (!fs.existsSync(Database._fragmentDirectory)) {
+        if (!fs.existsSync(Database._fragmentFile)) {
             const bufferfragmentDatabase = new sql.Database();
             const data = bufferfragmentDatabase.export();
             const buffer = Buffer.from(data);
-            fs.writeFileSync(Database._fragmentDirectory, buffer);
+            fs.writeFileSync(Database._fragmentFile, buffer);
         }
 
-        const filebuffer = fs.readFileSync(Database._fragmentDirectory);
+        const filebuffer = fs.readFileSync(Database._fragmentFile);
         Database._fragmentDatabase = new sql.Database(filebuffer);
         Database._fragmentDatabase.run("CREATE TABLE IF NOT EXISTS fragments (label char PRIMARY KEY,prefix char,scope char,body char,description char,keywords char,tags char,domain char,placeholders char,snippet char);");
         Database._fragmentDatabase.run("CREATE VIEW IF NOT EXISTS v_tags AS WITH RECURSIVE split(name, rest) " +
@@ -76,7 +78,7 @@ export class Database {
     private static persist(): void {
         const data1 = Database._fragmentDatabase.export();
         const buffer1 = Buffer.from(data1);
-        fs.writeFileSync(Database._fragmentDirectory, buffer1);
+        fs.writeFileSync(Database._fragmentFile, buffer1);
     }
 
     static get loadedFragments(): Fragment[] {
