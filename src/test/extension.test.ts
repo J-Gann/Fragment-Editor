@@ -3,13 +3,33 @@ import * as assert from 'assert';
 import * as path from 'path';
 import * as fs from 'fs';
 import { Fragment } from '../fragment';
+import { FragmentProvider } from '../fragmentProvider';
+import * as vscode from 'vscode';
+import * as fragedit from '../extension';
 
-// You can import and use all API from the 'vscode' module
-// as well as import your extension to test it
-// import * as vscode from 'vscode';
-// import * as myExtension from '../extension';
 
-// Defines a Mocha test suite to group tests of similar kind together
+
+suite("Extension activating", () => {
+    const extension = vscode.extensions.getExtension('fragedit.fragment-editor');
+    
+    test('Extension should be present', () => {
+        assert.ok(extension);
+    });
+    
+    test('Extension should activate', function () {
+        this.timeout(1 * 60 * 1000);
+        
+        if (extension === undefined) {
+            return;
+        }
+
+        return extension.activate().then((api) => {
+            assert.ok(true);
+            console.log(api);
+        });
+    });
+});
+
 suite("Database Tests", () => {
     const dbpath = path.join(require('os').homedir(), "fragments");
     const dbname = "testdb.db";

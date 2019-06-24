@@ -6,7 +6,7 @@
 	"engines": {
 		"vscode": "^1.33.0"
 	},
-	"publisher": "frag.edit",
+	"publisher": "fragedit",
 	"categories": [
 		"Other"
 	],
