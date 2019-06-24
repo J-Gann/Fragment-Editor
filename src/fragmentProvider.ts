@@ -4,6 +4,7 @@ import { Database } from './database';
 import { FragmentEditor } from './fragmentEditor';
 import { FOEF, PyPa } from './parametrization';
 import { TreeItem } from './treeItem';
+import { PyPaExp } from './parametrization_experimental';
 
 /**
  * Provides TreeItems that should be displayed in a tree view
@@ -126,7 +127,6 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
         var editor = vscode.window.activeTextEditor;
         var selection: vscode.Selection;
         var textDocument: vscode.TextDocument;
-
         const db: Database = Database.getInstance();
 
         if (editor) {
@@ -148,10 +148,10 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
                 vscode.window.showErrorMessage("Fragment Not Added (label has to be unique)");
                 console.log("[W] | [FragmentProvider | addFragment]: Failed");
             } else {
-                //var obj = FOEF.parametrize(text);
-                //var newFragment = new Fragment({...{label: label}, ...obj});
-                //Database.addFragment(newFragment);
                 if (editor !== undefined && textDocument.fileName.match(/.*\.py$/)) {
+                    // ##################################################################
+                    PyPaExp.parametrize(textDocument, selection);
+                    // ##################################################################
                     var result = PyPa.parametrize(textDocument, selection);
                     if(result !== undefined) {
                         result.then(obj => {
@@ -189,6 +189,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
                 } else {
                     var newFragment = new Fragment({ label: label });
                     db.addFragment(newFragment);
+                    this.refresh();
                 }
             }
         });

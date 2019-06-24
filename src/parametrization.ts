@@ -240,7 +240,6 @@ export class PyPa {
             var snippet_start_index = PyPa.calculateIndex(document, selection.start.line + 1, selection.start.character);
             var snippet_end_index = PyPa.calculateIndex(document, selection.end.line + 1, selection.end.character);
             var script = PyPa.createScript(placeholders, document, snippet, snippet_start_index, snippet_end_index);
-            console.log(script)
             return this.executeScript(script, placeholders, parametrizedSnippet);
         }
     }
