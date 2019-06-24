@@ -68,11 +68,19 @@ export class TreeItem extends vscode.TreeItem {
     private _tag: string | undefined;      // The label of a TreeItem of type 'tag' the TreeItem of type 'fragment' is assigned to.
 
     get tag(): string | undefined {
-        if (this.contextValue === "fragment") {
+        if (this.contextValue === "fragment" && this._tag !== undefined) {
             return this._tag;
         } else {
             console.log("[W] | [TreeItem | get tag]: Failed for TreeItem: " + this.label);
             return undefined;
+        }
+    }
+
+    hasTag(): boolean {
+        if (this._tag !== undefined) {
+            return true;
+        } else {
+            return false;
         }
     }
 
