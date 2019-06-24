@@ -38,6 +38,10 @@ export class Database {
         this._default_path = path;
     }
 
+    static getDefaultPath() : string {
+        return this._default_path;
+    }
+
     createFragmentDatabase(): void {
         if (!fs.existsSync(this._fragmentPath)) {
             fs.mkdirSync(this._fragmentPath);
@@ -62,7 +66,7 @@ export class Database {
         this.persist();
     }
 
-    private loadFragments(): void {
+    loadFragments(): void {
         const res = this._fragmentDatabase.exec("SELECT * FROM fragments")[0];
         if (res === undefined) {
             return;

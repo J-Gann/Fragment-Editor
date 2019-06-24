@@ -20,12 +20,16 @@ suite("Database Tests", () => {
     }
     const db: Database = new Database(dbpath, dbname);
     
-    test("Adding functions", function () {
-        console.log(db.getFragments());
+    test("Adding functions", () => {
         assert.equal(db.getFragments().length, 0);
         db.addFragment(new Fragment({label: "asd"}));
-        console.log(db.getFragments());
         assert.equal(db.getFragments().length, 1);
+    });
+
+    test("Remove Fragment", () => {
+        assert.equal(db.getFragments().length, 1);
+        db.deleteFragment("asd");
+        assert.equal(db.getFragments().length, 0);
     });
 });
 
