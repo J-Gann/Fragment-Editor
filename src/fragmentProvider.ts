@@ -148,35 +148,34 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
                 vscode.window.showErrorMessage("Fragment Not Added (label has to be unique)");
                 console.log("[W] | [FragmentProvider | addFragment]: Failed");
             } else {
-                if (editor !== undefined && textDocument.fileName.match(/.*\.py$/)) {
-                    // ##################################################################
-                    PyPaExp.parametrize(textDocument, selection);
-                    // ##################################################################
-                    var result = PyPa.parametrize(textDocument, selection);
-                    if(result !== undefined) {
+                if (editor !== undefined && textDocument.fileName.match(/.*\.py$/)) {                 
+                    //var result = PyPa.parametrize(textDocument, selection);
+                    var result = PyPaExp.parametrize(textDocument, selection);
+                    if (result !== undefined) {
                         result.then(obj => {
-                            var newFragment = new Fragment({...{label: label}, ...obj});
+                            var newFragment = new Fragment({ ...{ label: label }, ...obj });
                             db.addFragment(newFragment);
                             this.refresh();
                             vscode.window.showInformationMessage("Successfully Added Parametrized Fragment");
                         },
-                        (err: any) => {
-                            vscode.window.showErrorMessage("Parametrization Failed. Python Code not executable?");
-                            console.log("[W] | [FragmentProvider | addFragment]: Failed: " + err);
-                            var body = textDocument.getText(new vscode.Range(selection.start, selection.end));
-                            var newFragment = new Fragment({ label: label, body: body });
-                            db.addFragment(newFragment);
-                            this.refresh();
-                            vscode.window.showInformationMessage("Added Fragment without Parametrization");
-                        });
+                            (err: any) => {
+                                vscode.window.showErrorMessage("Parametrization Failed. Python Code not executable?");
+                                console.log("[W] | [FragmentProvider | addFragment]: Failed: " + err);
+                                var body = textDocument.getText(new vscode.Range(selection.start, selection.end));
+                                var newFragment = new Fragment({ label: label, body: body });
+                                db.addFragment(newFragment);
+                                this.refresh();
+                                vscode.window.showInformationMessage("Added Fragment without Parametrization");
+                            });
                     } else {
                         vscode.window.showInformationMessage("No Placeholders found");
                         var body = textDocument.getText(new vscode.Range(selection.start, selection.end));
-                        var newFragment = new Fragment({label: label, body: body});
+                        var newFragment = new Fragment({ label: label, body: body });
                         db.addFragment(newFragment);
                         vscode.window.showInformationMessage("Added Fragment without Parametrization");
                         this.refresh();
                     }
+                    
                 } else if (selection !== undefined) {
                     var body = textDocument.getText(new vscode.Range(selection.start, selection.end));
                     var newFragment = new Fragment({ label: label, body: body });

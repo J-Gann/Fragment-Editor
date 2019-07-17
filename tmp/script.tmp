@@ -1,0 +1,12 @@
+def detType(id, x):
+    print('{\"id\": \"' + str(id) + '\", \"type\": ' + '\"' + str(type(x)) + '\"' + '}')
+    return x
+text_file = detType('1|12', sc).textFile("hdfs://...")
+counts = text_file.flatMap(lambda line: detType('2|40', line).split(" ")) \
+             .map(lambda word: (detType('3|32', word), 1)) \
+             .reduceByKey(lambda a, b: detType('4|39', a) + detType('4|43', b))
+counts.saveAsTextFile("hdfs://...")
+
+
+
+

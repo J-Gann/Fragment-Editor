@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
-import {Fragment} from "./fragment";
-import {Database} from './database';
-import {PythonShell} from 'python-shell';
+import { Fragment } from "./fragment";
+import { Database } from './database';
+import { PythonShell } from 'python-shell';
 
 var fs = require('fs');
 const filbert = require('filbert');
@@ -141,7 +141,7 @@ export class PyPa {
          */
         let findPlaceholders = function (code: string): string[] {
             // Parsing the code snippet using 'filbert' (locations of the objects should be included)
-            var parsedSnippet: JSON = filbert.parse(code, {locations: true});
+            var parsedSnippet: JSON = filbert.parse(code, { locations: true });
 
             // Search for all declarations in the parsed code snippet using 'jsonpath'
             var declarationsSnippet = jp.query(parsedSnippet, '$.body[?(@.type=="VariableDeclaration")].declarations[0].id');
@@ -322,7 +322,7 @@ export class PyPa {
                     }
 
                     // properties of the current placeholder as a object
-                    var properties = JSON.stringify({name: name, index: cnt, length: endColumn - startColumn});
+                    var properties = JSON.stringify({ name: name, index: cnt, length: endColumn - startColumn });
 
                     // Insert the special function with appropriate parameters
                     newCode += "typeDef(" + properties + ", " + name + ")";
@@ -385,7 +385,7 @@ export class PyPa {
                                     placeholders += "${" + index + ":" + res._name + ":" + res._placeholder.getDatatypes() + "}, ";
                                 });
                                 // Deliver the promised parametrization
-                                resolve({body: insertPlaceholders(snippet), placeholders: placeholders});
+                                resolve({ body: insertPlaceholders(snippet), placeholders: placeholders });
                             }
                         } catch (err) {
                             console.log("[E] | [PyPa | parametrize]:\n" + err);
@@ -605,6 +605,6 @@ export class FOEF {
         }
         newKeywords = newKeywords.substr(0, newKeywords.length - 1);
 
-        return {body: _newCode, keywords: newKeywords, placeholders: _newPlaceholders};
+        return { body: _newCode, keywords: newKeywords, placeholders: _newPlaceholders };
     }
 }

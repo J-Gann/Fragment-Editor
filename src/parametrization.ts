@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
-import {Fragment} from "./fragment";
-import {Database} from './database';
-import {PythonShell} from 'python-shell';
+import { Fragment } from "./fragment";
+import { Database } from './database';
+import { PythonShell } from 'python-shell';
 
 const filbert = require('filbert');
 const jp = require('jsonpath');
@@ -68,7 +68,7 @@ export class PyPa {
      */
     static findPlaceholders(snippet: string): Placeholder[] {
         // Use 'filbert' and 'jsonpath' to extract declarations and parameters
-        var parsed: JSON = filbert.parse(snippet, {locations: true});
+        var parsed: JSON = filbert.parse(snippet, { locations: true });
         var declarations = jp.query(parsed, '$.body[?(@.type=="VariableDeclaration")].declarations[0].id');
         var parameters = jp.query(parsed, '$..arguments[?(@.type=="Identifier")]');
         var placeholders: Placeholder[] = [];
@@ -222,7 +222,7 @@ export class PyPa {
         placeholders.forEach((placeholder: Placeholder) => {
             placeholderString += "{" + placeholder.index + ":" + placeholder.name + ":" + placeholder.type + "}" + ", ";
         });
-        return {body: snippet, placeholders: placeholderString};
+        return { body: snippet, placeholders: placeholderString };
     }
 
     /**
@@ -234,8 +234,7 @@ export class PyPa {
         var document = textDocument.getText();
         var snippet = textDocument.getText(new vscode.Range(selection.start, selection.end));
         var placeholders = PyPa.findPlaceholders(snippet);
-        if (placeholders.length !== 0)
-        {
+        if (placeholders.length !== 0) {
             var parametrizedSnippet = PyPa.parametrizeSnippet(snippet, placeholders);
             var snippet_start_index = PyPa.calculateIndex(document, selection.start.line + 1, selection.start.character);
             var snippet_end_index = PyPa.calculateIndex(document, selection.end.line + 1, selection.end.character);
@@ -454,6 +453,6 @@ export class FOEF {
         }
         newKeywords = newKeywords.substr(0, newKeywords.length - 1);
 
-        return {body: _newCode, keywords: newKeywords, placeholders: _newPlaceholders};
+        return { body: _newCode, keywords: newKeywords, placeholders: _newPlaceholders };
     }
 }
