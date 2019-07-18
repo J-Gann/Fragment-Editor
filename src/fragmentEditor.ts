@@ -2,7 +2,7 @@ import {Fragment} from "./fragment";
 import * as vscode from 'vscode';
 import {Database} from "./database";
 import {FragmentProvider} from "./fragmentProvider";
-import {FOEF} from "./parametrization";
+import {FOEF} from "./parametrization_old1";
 import {PyPa} from "./parametrization_old";
 
 export class FragmentEditor {

@@ -1,458 +1,334 @@
 import * as vscode from 'vscode';
-import { Fragment } from "./fragment";
-import { Database } from './database';
-import { PythonShell } from 'python-shell';
+import { FragmentProvider } from './fragmentProvider';
+import { writeFile } from 'fs';
+import { stringify } from 'querystring';
+import { resolve } from 'url';
+import { rejects } from 'assert';
 
-const filbert = require('filbert');
+const path = require('path');
+const fs = require('fs');
 const jp = require('jsonpath');
+const exec = require('child_process').exec;
 const clonedeep = require('lodash.clonedeep');
 
 class Placeholder {
-    start_index: number;
-    start_line: number;
-    end_index: number;
-    end_line: number;
-    name: string;
-    type: string | undefined;
+    id: string;
     index: number | undefined;
-    id: number;
+    name: string;
+    col_offset: number;
+    lineno: number;
+    datatype: number | undefined;
 
-    constructor(id: number, name: string, start_index: number, end_index: number, start_line: number, end_line: number, type?: string, index?: number) {
-        this.start_index = start_index;
-        this.start_line = start_line;
-        this.end_index = end_index;
-        this.end_line = end_line;
+    constructor(name: string, col_offset: number, lineno: number) {
         this.name = name;
-        this.type = type;
-        this.index = index;
-        this.id = id;
+        this.col_offset = col_offset;
+        this.lineno = lineno;
+        this.id = lineno + "|" + col_offset;
     }
 }
 
 export class PyPa {
-    /**
-     * Calculates the index of a character of which only line and column are known
-     * @param document The document, for which the index of a line-column-pair should be calculated
-     * @param line The line of the char which index should be calculated
-     * @param column The column of the char which index should be calculated
-     */
-    static calculateIndex(document: string, line: number, column: number): number {
-        var document_array = document.split('\n');
-        var index = 0;
-        for (var cnt = 0; cnt < line - 1; cnt++) {
-            index += document_array[cnt].length + 1;
-        }
-        index += column;
-        return index;
-    }
 
     /**
-     * Replaces a section of a document with a new one
-     * @param original The original document
-     * @param start The first index of the to be replaced section
-     * @param end The last index of the to be replaced section
-     * @param replacement The new section
+     * Downloads the Python Library for Astexport if it does not already exist in the src folder
      */
-    static replace(original: string, start: number, end: number, replacement: string): string {
-        var firstPart = original.substring(0, start);
-        var lastPart = original.substring(end, original.length);
-        return firstPart + replacement + lastPart;
-    }
-
-    /**
-     * Finds all variables, which are undefined in the snippet [best effort] and returns a list of so called Placeholders
-     * @param snippet The snippet, which contains the Placeholders
-     * @param document The code, containing the snippet
-     * @param start_snippet_index The first index of the snippet in reference to the document
-     * @param end_snippet_index The last index of the snippet in reference to the document
-     */
-    static findPlaceholders(snippet: string): Placeholder[] {
-        // Use 'filbert' and 'jsonpath' to extract declarations and parameters
-        var parsed: JSON = filbert.parse(snippet, { locations: true });
-        var declarations = jp.query(parsed, '$.body[?(@.type=="VariableDeclaration")].declarations[0].id');
-        var parameters = jp.query(parsed, '$..arguments[?(@.type=="Identifier")]');
-        var placeholders: Placeholder[] = [];
-
-        // Mark evers placeholders as defined, if a declaration of a variable with the same name appears anywhere in the snippet [best effort]
-        parameters.forEach((parameter: any) => {
-            var match = false;
-            declarations.forEach((decl: any) => {
-                if (decl.name === parameter.name) {
-                    match = true;
+    static getAstexport(): Promise<unknown> {
+        var promise = new Promise((resolve, reject) => {
+            fs.access(path.join(FragmentProvider.context.extensionPath, 'src', 'python-astexport'), fs.constants.F_OK, (err: any) => {
+                if (err) {
+                    var terminal = vscode.window.createTerminal({ name: 'getAstexport', cwd: path.join(FragmentProvider.context.extensionPath, 'src') });
+                    var repository = 'https://github.com/fpoli/python-astexport';
+                    terminal.show();
+                    terminal.sendText('git clone ' + repository);
+                    resolve();
+                } else {
+                    resolve();
                 }
-            });
-            if (!match) {
-                var name = parameter.name;
-                var start_index = PyPa.calculateIndex(snippet, parameter.loc.start.line, parameter.loc.start.column);
-                var end_index = PyPa.calculateIndex(snippet, parameter.loc.end.line, parameter.loc.end.column);
-                var start_line = parameter.loc.start.line;
-                var end_line = parameter.loc.end.line;
-                placeholders.push(new Placeholder(start_index, name, start_index, end_index, start_line, end_line));
-            }
+            })
         });
+        return promise;
+    }
 
+    /**
+     * Tries to compute the Python AST for the given string
+     */
+    static getAST(document: string): Promise<string | any> {
+        var promise = new Promise((resolve, reject) => {
+            var filePath = path.join(FragmentProvider.context.extensionPath, 'tmp', 'getAST.tmp');
+            fs.writeFile(filePath, document, (err: any) => {
+                if (!err) {
+                    exec('python3 __main__.py -p -i ' + filePath, { cwd: path.join(FragmentProvider.context.extensionPath, 'src', 'python-astexport', 'astexport') }, (error: any, stdout: string, stderr: string) => {
+                        if (error) {
+                            reject(error);
+                        } else if (stderr) {
+                            reject(stderr);
+                        } else {
+                            resolve(stdout);
+                        }
+                    });
+                } else {
+                    reject(err);
+                }
+            })
+        });
+        return promise;
+    };
+
+    /**
+     * Tries to retrieve the placeholders from the given Python AST
+     */
+    static getPlaceholders(documentCode: string, selection: vscode.Selection, preDefinedNames: string[]): Promise<Placeholder | any> {
+        var promise = new Promise((resolve, reject) => {
+            PyPa.getAST(documentCode)
+                .then((value: string) => {
+                    var jsonAST = JSON.parse(value);
+                    var declarations: any[] = [];
+                    var assignmentDeclarations = jp.query(jsonAST, '$..[?(@.ast_type=="Assign")].targets.*');
+                    var forLoopTargetDeclarations = jp.query(jsonAST, '$..[?(@.ast_type=="For")].target');
+                    var functionDeclarations = jp.query(jsonAST, '$..[?(@.ast_type=="FunctionDef")]');
+                    var functionDefParamDeclarations = jp.query(jsonAST, '$..[?(@.ast_type=="FunctionDef")].args.args.*');
+                    functionDefParamDeclarations.forEach((definition: any) => {
+                        definition.id = definition.arg;
+                    });
+                    functionDeclarations.forEach((definition: any) => {
+                        definition.id = definition.name;
+                    });
+                    declarations = declarations.concat(assignmentDeclarations, forLoopTargetDeclarations, functionDeclarations, functionDefParamDeclarations);
+
+                    var parameters: any[] = [];
+                    var expressionParameters = jp.query(jsonAST, '$..[?(@.ast_type=="Expr")]..[?(@.ast_type=="Name")]');
+                    var compareParameters = jp.query(jsonAST, '$..[?(@.ast_type=="Compare")]..[?(@.ast_type=="Name")]');
+                    var returnParameters = jp.query(jsonAST, '$..[?(@.ast_type=="Return")]..[?(@.ast_type=="Name")]');
+                    var callParameters = jp.query(jsonAST, '$..[?(@.ast_type=="Call")]..[?(@.ast_type=="Name")]');
+                    parameters = parameters.concat(expressionParameters, compareParameters, returnParameters, callParameters);
+
+                    var selectionStartLine = selection.start.line + 1;
+                    var selectionEndLine = selection.end.line + 1;
+
+                    var declarationsInSelection: { col_offset: number, id: string, lineno: number }[] = [];
+                    var parametersInSelection: { col_offset: number, id: string, lineno: number }[] = [];
+
+                    // Delete all declarations which are not in the selection
+                    declarations.forEach((declaration: { col_offset: number, id: string, lineno: number }) => {
+                        if (declaration.lineno >= selectionStartLine && declaration.lineno <= selectionEndLine && !preDefinedNames.includes(declaration.id)) {
+                            declarationsInSelection.push(declaration);
+                        }
+                    });
+
+                    // Delete all parameters which are not in the selection
+                    parameters.forEach((parameter: { col_offset: number, id: string, lineno: number }) => {
+                        if (parameter.lineno >= selectionStartLine && parameter.lineno <= selectionEndLine && !preDefinedNames.includes(parameter.id)) {
+                            parametersInSelection.push(parameter);
+                        }
+                    });
+
+                    var placeholders: Placeholder[] = [];
+                    // For every parameter, search if there exists a declaration with the same name and a lower line number
+                    parametersInSelection.forEach((parameter: { col_offset: number, id: string, lineno: number }) => {
+                        var defined = false;
+                        declarationsInSelection.forEach((declaration: { col_offset: number, id: string, lineno: number }) => {
+                            if (parameter.id === declaration.id && declaration.lineno <= parameter.lineno) {
+                                defined = true;
+                            }
+                        });
+                        if (!defined) {
+                            placeholders.push(new Placeholder(parameter.id, parameter.col_offset, parameter.lineno));
+                        }
+                    });
+
+                    var uniquePlaceholders: Placeholder[] = [];
+                    placeholders.forEach((placeholder: Placeholder) => {
+                        var exists = false;
+                        uniquePlaceholders.forEach((uniquePlaceholder: Placeholder) => {
+                            if (placeholder.id === uniquePlaceholder.id) {
+                                exists = true;
+                            }
+                        });
+                        if (!exists) {
+                            uniquePlaceholders.push(placeholder);
+                        }
+                    });
+
+                    resolve(uniquePlaceholders);
+                })
+                .catch((error: any) => {
+                    reject(error)
+                })
+        });
+        return promise;
+    }
+
+    static placeholderIndicesToSnippet(placeholders: Placeholder[], selection: vscode.Selection): Placeholder[] {
+        var lineOffset = selection.start.line;
+        placeholders.forEach((placeholder: Placeholder) => {
+            placeholder.lineno -= lineOffset;
+        });
         return placeholders;
     }
 
-    /**
-     * Inserts a parametrized format instead of the variable name for every Placeholder
-     * @param snippet The snippet that should be parametrized
-     * @param placeholders The placeholders the snippet contains
-     */
-    static parametrizeSnippet(snippet: string, placeholders: Placeholder[]): string {
-        var placeholdersTmp = clonedeep(placeholders);
-        var index = 1;
-        placeholdersTmp.forEach((placeholder: any) => {
-            var insert = "{" + index + ":" + placeholder.name + "}";
-            snippet = PyPa.replace(snippet, placeholder.start_index, placeholder.end_index, insert);
-            placeholdersTmp.forEach((other_parameter: any) => {
-                if (placeholder.start_index !== other_parameter.start_index && placeholder.start_line <= other_parameter.start_line) {
-                    other_parameter.start_index += insert.length - placeholder.name.length;
-                    other_parameter.end_index += insert.length - placeholder.name.length;
+    static parametrizedSnippet(textDocument: vscode.TextDocument, selection: vscode.Selection, placeholders: Placeholder[]): string {
+        var snippet = textDocument.getText(new vscode.Range(selection.start, selection.end));
+        var placeholdersCopy = clonedeep(placeholders);
+        var index = 0;
+        placeholdersCopy.forEach((placeholder: Placeholder) => {
+            var snippetList = snippet.split('\n');
+            placeholder.index = index;
+            placeholders.forEach((placeholderOriginal: Placeholder) => {
+                if(placeholder.id === placeholderOriginal.id) {
+                    placeholderOriginal.index = index
                 }
             });
-            placeholders.forEach((_placeholder: Placeholder) => {
-                if (_placeholder.id === placeholder.id) {
-                    _placeholder.index = index;
+            var parameter = '{' + placeholder.index + ':' + placeholder.name + '}';
+            snippetList[placeholder.lineno - 1] = snippetList[placeholder.lineno - 1].substring(0, placeholder.col_offset) + parameter + snippetList[placeholder.lineno - 1].substring(placeholder.col_offset + placeholder.name.length, snippetList[placeholder.lineno - 1].length);
+            var tmp = "";
+            snippetList.forEach((elem: string) => {
+                tmp += elem + '\n';
+            });
+            snippet = tmp;
+            placeholdersCopy.forEach((placeholder_: Placeholder) => {
+                if (placeholder.lineno === placeholder_.lineno && placeholder.col_offset < placeholder_.col_offset) {
+                    placeholder_.col_offset += parameter.length - placeholder.name.length;
                 }
             });
-            index += 1;
+            index++;
         });
         return snippet;
     }
 
-    /**
-     * Creates a modified version of a python script in order to print datatypes of placeholders
-     * @param placeholders List of placeholders of the snippet
-     * @param document Document which includes the snippet
-     * @param snippet Snippet containing the placeholders
-     * @param snippet_start_index First index of the snippet in relation to the document
-     * @param snippet_end_index Last index of the snippet in relation to the document
-     */
-    static createScript(placeholders: Placeholder[], document: string, snippet: string, snippet_start_index: number, snippet_end_index: number): string {
-        var placeholdersTmp = clonedeep(placeholders);
-        placeholdersTmp.forEach((placeholder: any) => {
-            var insert = "error";
-            placeholders.forEach((_placeholder: Placeholder) => {
-                if (_placeholder.id === placeholder.id) {
-                    insert = "detType(" + "'" + _placeholder.id + "'" + ", " + placeholder.name + ")";
-                }
+    static createScript(textDocument: vscode.TextDocument, selection: vscode.Selection, placeholders: Placeholder[]): string {
+        var snippet = textDocument.getText(new vscode.Range(selection.start, selection.end));
+        var placeholdersCopy = clonedeep(placeholders);
+        placeholdersCopy.forEach((placeholder: Placeholder) => {
+            var snippetList = snippet.split('\n');
+            var insert = "detType(" + "'" + placeholder.id + "'" + ", " + placeholder.name + ")";
+            snippetList[placeholder.lineno - 1] = snippetList[placeholder.lineno - 1].substring(0, placeholder.col_offset) + insert + snippetList[placeholder.lineno - 1].substring(placeholder.col_offset + placeholder.name.length, snippetList[placeholder.lineno - 1].length);
+            var tmp = "";
+            snippetList.forEach((elem: string) => {
+                tmp += elem + '\n';
             });
-            snippet = PyPa.replace(snippet, placeholder.start_index, placeholder.end_index, insert);
-            placeholdersTmp.forEach((other_parameter: any) => {
-                if (placeholder.start_index !== other_parameter.start_index && placeholder.start_line <= other_parameter.start_line) {
-                    other_parameter.start_index += insert.length - placeholder.name.length;
-                    other_parameter.end_index += insert.length - placeholder.name.length;
+            snippet = tmp;
+            placeholdersCopy.forEach((placeholder_: Placeholder) => {
+                if (placeholder.lineno === placeholder_.lineno && placeholder.col_offset < placeholder_.col_offset) {
+                    placeholder_.col_offset += insert.length - placeholder.name.length;
                 }
             });
         });
         var detType = "def detType(id, x):\n" +
-            "    print('{\\\"id\\\": ' + str(id) + ', \\\"type\\\": ' + '\\\"' + str(type(x)) + '\\\"' + '}')\n" +
-            "    return x\n";
-
-        return detType + PyPa.replace(document, snippet_start_index, snippet_end_index, snippet);
+        "    print('{\\\"id\\\": \\\"' + str(id) + '\\\", \\\"type\\\": ' + '\\\"' + str(type(x)) + '\\\"' + '}')\n" +
+        "    return x\n";
+        return detType + textDocument.getText(new vscode.Range(textDocument.positionAt(0), selection.start)) + snippet + textDocument.getText(new vscode.Range(selection.end, new vscode.Position(textDocument.lineCount, textDocument.lineAt(textDocument.lineCount-1).text.length)));
     }
 
-    /**
-     * Assigns datatypes to Placeholders according to the results from the modified python script
-     * @param results Print statements of the modified python script
-     * @param placeholders Placeholders, for which datatypes should be assigned according to the results
-     */
-    static assignDatatypes(results: string[], placeholders: Placeholder[]) {
-        var result = results.filter(value => {
+    static sortPlaceholders(placeholders: Placeholder[]): Placeholder[] {
+        placeholders.sort((a: Placeholder, b: Placeholder) => {
+            if (a.lineno < b.lineno) {
+                return -1;
+            } else if (a.lineno === b.lineno && a.col_offset < b.col_offset) {
+                return -1;
+            } else {
+                return 1;
+            }
+        });
+        return placeholders;
+    }
+
+    static executeScript(script: string): Promise<string | any> {
+        var promise = new Promise((resolve, reject) => {
+            var filePath = path.join(FragmentProvider.context.extensionPath, 'tmp', 'script.tmp');
+            fs.writeFile(filePath, script, (err: any) => {
+                if (!err) {
+                    exec('python3 ' + filePath, (error: any, stdout: string, stderr: string) => {
+                        if (error) {
+                            reject(error);
+                        } else if (stderr) {
+                            reject(stderr);
+                        } else {
+                            resolve(stdout);
+                        }
+                    });
+                } else {
+                    reject(err);
+                }
+            });
+        });
+        return promise;
+    }
+
+    static parseScriptOutput(output: string): string[] {
+        var result = output.split("\r\n").filter(value => {
             if (value.match(/^\{"id": .*, "type": .*\}$/)) {
                 return true;
             } else {
                 return false;
             }
         });
-        placeholders.forEach((placeholder: Placeholder) => {
-            result.forEach((elem: string) => {
-                var obj = JSON.parse(elem);
-                if (obj.id === placeholder.id) {
-                    placeholder.type = obj.type;
-                }
-            });
-        });
-    }
 
-    /**
-     * Executes a python script
-     * @param script Python script that should be executed
-     * @param placeholders
-     * @param snippet
-     */
-    static executeScript(script: string, placeholders: Placeholder[], snippet: string): Promise<{ body: string, placeholders: string }> {
-        return new Promise((resolve, reject) => {
-            try {
-                PythonShell.runString(script, {}, ((err: any, results: any) => {
-                    try {
-                        if (err) {
-                            throw err;
-                        }
-                        if (results !== undefined && results !== null) {
-
-                            PyPa.assignDatatypes(results, placeholders);
-                            var result = PyPa.formatResult(placeholders, snippet);
-                            resolve(result);
-                        } else {
-                            reject();
-                        }
-                    } catch (err) {
-                        console.log("[E] | [PyPa | executeScript]: Failed: " + err);
-                        reject(err);
-                    }
-
-                }));
-            } catch (err) {
-                console.log("[E] | [PyPa | executeScript]: Failed: " + err);
-                reject(err);
+        var uniqueResult: string[] = [];
+        result.forEach((element: string) => {
+            if(!uniqueResult.includes(element)) {
+                uniqueResult.push(element);
             }
-
         });
+        return uniqueResult;
     }
 
-    /**
-     * Formats the results in order to return them correctly
-     * @param placeholders Placeholders, of the snippet
-     * @param snippet Parametrized snippet
-     */
-    static formatResult(placeholders: Placeholder[], snippet: string) {
+    static assignDatatypes(parsedScript: string[], placeholders: Placeholder[]) {
+        parsedScript.forEach((datatype: string) => {
+            var datatypeJSON = JSON.parse(datatype);
+            placeholders.forEach((placeholder: Placeholder) => {
+                if(placeholder.id === datatypeJSON.id) {
+                    placeholder.datatype = datatypeJSON.type;
+                }
+            })
+        });
+        return placeholders;
+    }
+
+    static formatResult(placeholders: Placeholder[], snippet: string): { body: string, placeholders: string } {
         var placeholderString = "";
         placeholders.forEach((placeholder: Placeholder) => {
-            placeholderString += "{" + placeholder.index + ":" + placeholder.name + ":" + placeholder.type + "}" + ", ";
+            placeholderString += "{" + placeholder.index + ":" + placeholder.name + ":" + placeholder.datatype + "}" + ", ";
         });
         return { body: snippet, placeholders: placeholderString };
     }
 
-    /**
-     * Parametrized the selection of the document and determines the datatypes of the placeholders
-     * @param textDocument
-     * @param selection
-     */
-    static parametrize(textDocument: vscode.TextDocument, selection: vscode.Selection): Promise<{ body: string, placeholders: string }> | undefined {
-        var document = textDocument.getText();
-        var snippet = textDocument.getText(new vscode.Range(selection.start, selection.end));
-        var placeholders = PyPa.findPlaceholders(snippet);
-        if (placeholders.length !== 0) {
-            var parametrizedSnippet = PyPa.parametrizeSnippet(snippet, placeholders);
-            var snippet_start_index = PyPa.calculateIndex(document, selection.start.line + 1, selection.start.character);
-            var snippet_end_index = PyPa.calculateIndex(document, selection.end.line + 1, selection.end.character);
-            var script = PyPa.createScript(placeholders, document, snippet, snippet_start_index, snippet_end_index);
-            return this.executeScript(script, placeholders, parametrizedSnippet);
-        }
-    }
+    static parametrize(textDocument: vscode.TextDocument, selection: vscode.Selection): Promise<{ body: string, placeholders: string }> {
+        var placeholdersDocument: Placeholder[] = [];
+        var placeholdersSnippet: Placeholder[] = [];
+        var body = "";
+        var preDefinedNames = ["abs", "delattr", "hash", "memoryview", "set", "all", "dict", "help", "min", "setattr", "any", "dir", "hex", "next", "slice", "ascii", "divmod", "id", "object", "sorted", "bin", "enumerate",
+                                "input", "oct", "staticmethod", "bool", "eval", "int", "open", "str", "breakpoint", "exec", "isinstance", "ord", "sum", "bytearray", "filter", "issubclass", "pow", "super", "bytes", "float",
+                                "iter", "print", "tuple", "callable", "format", "len", "property", "type", "chr", "frozenset", "list", "range", "vars", "classmethod", "getattr", "locals", "repr", "zip", "compile", "globals",
+                                "map", "reversed", "__import__", "complex", "hasattr", "max", "round"]
 
-    static parametrize_test(snippet: string, document: string, snippet_start_index: number, snippet_end_index: number) {
-        var placeholders = PyPa.findPlaceholders(snippet);
-        var parametrizedSnippet = PyPa.parametrizeSnippet(snippet, placeholders);
-        var placeholders = PyPa.findPlaceholders(snippet);
-        var parametrizedSnippet = PyPa.parametrizeSnippet(snippet, placeholders);
-        var script = PyPa.createScript(placeholders, document, snippet, snippet_start_index, snippet_end_index);
-        return this.executeScript(script, placeholders, parametrizedSnippet);
-    }
-}
-
-/**
- * Try to create a fragment out of existing fragments
- */
-export class FOEF {
-    /**
-     * Calculate a parametrized snippet of the code and return it
-     * @param code Code to parametrize
-     */
-    static parametrize(code: string): { body: string, keywords: string, placeholders: string } {
-        // 1) Split code in array of lines
-        var codeLines = code.split("\n");
-
-        // 2) For each line: Delete all predefined symbols from the code
-        var deletable = ['\r', '(', ')', '{', '}', '[', ']', ';', ';', ':', '/', '-', '+', '<', '>', '&', '|', '?', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '=', '%', '!'];
-        var keywordArrays: string[][] = [];
-        codeLines.forEach((line: string) => {
-            var reducedCode = "";
-            for (var cnt = 0; cnt < line.length; cnt++) {
-                if (!deletable.includes(line[cnt])) {
-                    reducedCode += line[cnt];
-                } else {
-                    reducedCode += " ";
-                }
-            }
-            keywordArrays.push(reducedCode.split(" ").filter((keyword: string) => {
-                if (keyword === '') {
-                    return false;
-                } else {
-                    return true;
-                }
-            }));
-        });
-
-        var findKeywords: string[] = [];
-        keywordArrays.forEach((keywordArray: string[]) => {
-            keywordArray.forEach((keyword: string) => {
-                findKeywords.push(keyword);
+        var promise = new Promise<{ body: string, placeholders: string } | any>((resolve, reject) => {
+            PyPa.getAstexport()
+                .then(() => PyPa.getPlaceholders(textDocument.getText(), selection, preDefinedNames))
+                .then((documentPlaceholders: Placeholder[]) => {
+                    placeholdersDocument = documentPlaceholders;
+                    var snippetPlaceholders = PyPa.placeholderIndicesToSnippet(documentPlaceholders, selection);
+                    return snippetPlaceholders;
+                })
+                .then((snippetPlaceholders: Placeholder[]) => PyPa.sortPlaceholders(snippetPlaceholders))
+                .then((sortedSnippetPlaceholders: Placeholder[]) => {
+                    placeholdersSnippet = sortedSnippetPlaceholders;
+                    return PyPa.parametrizedSnippet(textDocument, selection, sortedSnippetPlaceholders);
+                })
+                .then((parametrizedSnippet: string) => {
+                    body = parametrizedSnippet;
+                    return PyPa.createScript(textDocument, selection, placeholdersDocument);
+                })
+                .then((script: string) => PyPa.executeScript(script))
+                .then((output: string) => PyPa.parseScriptOutput(output))
+                .then((typeDefinitions: string[]) =>  PyPa.assignDatatypes(typeDefinitions, placeholdersSnippet))
+                .then((placeholders: Placeholder[]) => {
+                    placeholdersSnippet = placeholders;
+                    resolve(PyPa.formatResult(placeholdersSnippet, body));
+                })
+                .catch((err) => {
+                    reject(err);
+                })
             });
-        });
-
-        // 4) For each line: Find all fragments that have at least one keyword in common
-        var fragmentsArrays: Fragment[][] = [];
-        keywordArrays.forEach((keywordArray: string[]) => {
-            var fragments: Fragment[] = [];
-            keywordArray.forEach((keyword: string) => {
-                Database.getInstance().getFilteredFragments('keyword:' + keyword).forEach((fragment: Fragment) => {
-                    fragments.push(fragment);
-                });
-            });
-            fragmentsArrays.push(fragments);
-        });
-
-        // 5) For each line: Count occurence of each fragment
-        var fragmentsMaps: Map<Fragment, number>[] = [];
-        fragmentsArrays.forEach((fragmentsArray: Fragment[]) => {
-            var fragmentsMap: Map<Fragment, number> = new Map();
-
-            if (fragmentsArray.length !== 0) {
-                fragmentsArray.forEach((fragment: Fragment) => {
-                    if (!fragmentsMap.has(fragment)) {
-                        fragmentsMap.set(fragment, 1);
-                    } else {
-                        fragmentsMap.set(fragment, fragmentsMap.get(fragment)! + 1);
-                    }
-                });
-            }
-            fragmentsMaps.push(fragmentsMap);
-        });
-
-        // 6) For each line: Reduce count of fragment for each keyword i has that is not present in the selected code
-        for (var cnt = 0; cnt < fragmentsMaps.length; cnt++) {
-            for (let entrie of fragmentsMaps[cnt].entries()) {
-                var fragment = entrie[0];
-                var count = entrie[1];
-                var keywords: string[] = [];
-                if (fragment.keywords !== undefined) {
-                    keywords = fragment.keywords.split(',');
-                }
-
-                // Substract one for each keyword the line does not have but the fragment has
-                keywords.forEach((keyword: string) => {
-                    if (!keywordArrays[cnt].includes(keyword)) {
-                        count -= 1;
-                    }
-                });
-
-                // Substract one for each keyword the fragment does not have but the line has: Too restrictive
-                /*
-                keywordArrays[cnt].forEach((keyword: string) =>
-                {
-                    if(!keywords.includes(keyword))
-                    {
-                        count -= 1;
-                    }
-                });
-                */
-
-                fragmentsMaps[cnt].set(fragment, count);
-            }
-        }
-
-        // 7) For each line: Replace line by code of fragment with highest count
-        var fragmentArray: Fragment[] = [];
-        fragmentsMaps.forEach((fragmentsMap: Map<Fragment, number>) => {
-            var currentFragment: Fragment;
-            var currentCount = 0;
-            for (let entrie of fragmentsMap.entries()) {
-                if (entrie[1] > currentCount) {
-                    currentFragment = entrie[0];
-                    currentCount = entrie[1];
-                }
-            }
-            fragmentArray.push(currentFragment!);
-        });
-
-        // 8) If matching fragments were found, replace line with fragments, otherwise leave original line untouched
-        var newCode = "";
-        for (var cnt = 0; cnt < fragmentArray.length; cnt++) {
-            if (fragmentArray[cnt] === undefined) {
-                if (cnt !== fragmentArray.length - 1) {
-                    newCode += codeLines[cnt] + '\n';
-                } else {
-                    newCode += codeLines[cnt];
-                }
-            } else {
-                // include whitespace before inserted fragments
-                var previousCode = codeLines[cnt];
-                var whitespace = "";
-                for (var cnt1 = 0; cnt1 < previousCode.length; cnt1++) {
-                    if (previousCode[cnt1] === " ") {
-                        whitespace += " ";
-                    } else if (previousCode[cnt1] === "\t") {
-                        whitespace += "\t";
-                    } else {
-                        break;
-                    }
-                }
-                if (cnt !== fragmentArray.length - 1) {
-                    newCode += whitespace + fragmentArray[cnt].body + '\n';
-                } else {
-                    newCode += whitespace + fragmentArray[cnt].body;
-                }
-            }
-        }
-
-        // Adapt placeholder in body so that their number is incrementing also over different lines
-        var placeholderCnt = 1;
-        var _newCode = "";
-        for (var cnt = 0; cnt < newCode.length; cnt++) {
-            var ch1 = newCode.charAt(cnt);
-            var ch2 = newCode.charAt(cnt + 1);
-            if (ch1 === '$' && ch2 === '{') {
-                _newCode += "${" + placeholderCnt;
-                cnt += 2;
-                placeholderCnt++;
-            } else {
-                _newCode += ch1;
-            }
-        }
-
-        // Create new list of placeholders
-        var newPlaceholders: string = "";
-
-        for (var cnt = 0; cnt < fragmentArray.length; cnt++) {
-            if (fragmentArray[cnt] !== undefined) {
-                if (fragmentArray[cnt].placeholders !== undefined) {
-                    newPlaceholders += fragmentArray[cnt].placeholders + ',';
-                }
-            }
-        }
-
-        // Adapt placeholders in list of placeholders so that their number is incrementing
-        var _newPlaceholders: string = "";
-        placeholderCnt = 1;
-        for (var cnt = 0; cnt < newPlaceholders.length; cnt++) {
-            var ch1 = newPlaceholders.charAt(cnt);
-            var ch2 = newPlaceholders.charAt(cnt + 1);
-            if (ch1 === '$' && ch2 === '{') {
-                _newPlaceholders += "${" + placeholderCnt;
-                cnt += 2;
-                placeholderCnt++;
-            } else {
-                _newPlaceholders += ch1;
-            }
-        }
-
-        _newPlaceholders = _newPlaceholders.substr(0, _newPlaceholders.length - 1);
-
-        // Create new list of keywords
-        var newKeywords: string = "";
-
-        for (cnt = 0; cnt < fragmentArray.length; cnt++) {
-            if (fragmentArray[cnt] !== undefined) {
-                if (fragmentArray[cnt].keywords !== undefined) {
-                    newKeywords += fragmentArray[cnt].keywords + ',';
-                }
-            }
-        }
-        newKeywords = newKeywords.substr(0, newKeywords.length - 1);
-
-        return { body: _newCode, keywords: newKeywords, placeholders: _newPlaceholders };
+        return promise;
     }
 }

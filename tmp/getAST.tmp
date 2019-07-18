@@ -1,5 +1,17 @@
-text_file = sc.textFile("hdfs://...")
-counts = text_file.flatMap(lambda line: line.split(" ")) \
-             .map(lambda word: (word, 1)) \
-             .reduceByKey(lambda a, b: a + b)
-counts.saveAsTextFile("hdfs://...")
+def placeholderFunction(x, y):
+    print("I am a placeholder function")
+
+x = 10
+
+#############################
+
+y = 20
+
+placeholderFunction(x, y)
+
+z = 30
+
+placeholderFunction(y, z)
+
+lambdaFuncion = lambda a : a + 10
+lambdaFuncion(x)

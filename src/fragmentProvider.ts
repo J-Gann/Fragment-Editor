@@ -2,9 +2,8 @@ import * as vscode from 'vscode';
 import { Fragment } from "./fragment";
 import { Database } from './database';
 import { FragmentEditor } from './fragmentEditor';
-import { FOEF, PyPa } from './parametrization';
 import { TreeItem } from './treeItem';
-import { PyPaExp } from './parametrization_experimental';
+import { PyPa } from './parametrization';
 
 /**
  * Provides TreeItems that should be displayed in a tree view
@@ -149,8 +148,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
                 console.log("[W] | [FragmentProvider | addFragment]: Failed");
             } else {
                 if (editor !== undefined && textDocument.fileName.match(/.*\.py$/)) {                 
-                    //var result = PyPa.parametrize(textDocument, selection);
-                    var result = PyPaExp.parametrize(textDocument, selection);
+                    var result = PyPa.parametrize(textDocument, selection);
                     if (result !== undefined) {
                         result.then(obj => {
                             var newFragment = new Fragment({ ...{ label: label }, ...obj });
