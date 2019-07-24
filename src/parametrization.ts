@@ -28,36 +28,16 @@ class Placeholder {
 }
 
 export class PyPa {
-
-    /**
-     * Downloads the Python Library for Astexport if it does not already exist in the src folder
-     */
-    static getAstexport(): Promise<unknown> {
-        var promise = new Promise((resolve, reject) => {
-            fs.access(path.join(FragmentProvider.context.extensionPath, 'src', 'python-astexport'), fs.constants.F_OK, (err: any) => {
-                if (err) {
-                    var terminal = vscode.window.createTerminal({ name: 'getAstexport', cwd: path.join(FragmentProvider.context.extensionPath, 'src') });
-                    var repository = 'https://github.com/fpoli/python-astexport';
-                    terminal.show();
-                    terminal.sendText('git clone ' + repository);
-                    resolve();
-                } else {
-                    resolve();
-                }
-            })
-        });
-        return promise;
-    }
-
     /**
      * Tries to compute the Python AST for the given string
      */
     static getAST(document: string): Promise<string | any> {
         var promise = new Promise((resolve, reject) => {
+            var pythonPath = path.join(FragmentProvider.context.extensionPath, 'src', 'python-astexport', 'astexport');
             var filePath = path.join(FragmentProvider.context.extensionPath, 'tmp', 'getAST.tmp');
             fs.writeFile(filePath, document, (err: any) => {
                 if (!err) {
-                    exec('python3 __main__.py -p -i ' + filePath, { cwd: path.join(FragmentProvider.context.extensionPath, 'src', 'python-astexport', 'astexport') }, (error: any, stdout: string, stderr: string) => {
+                    exec('python __main__.py -p -i ' + filePath, {cwd: pythonPath}, (error: any, stdout: string, stderr: string) => {
                         if (error) {
                             reject(error);
                         } else if (stderr) {
@@ -302,8 +282,8 @@ export class PyPa {
                                 "map", "reversed", "__import__", "complex", "hasattr", "max", "round"]
 
         var promise = new Promise<{ body: string, placeholders: string } | any>((resolve, reject) => {
-            PyPa.getAstexport()
-                .then(() => PyPa.getPlaceholders(textDocument.getText(), selection, preDefinedNames))
+
+            PyPa.getPlaceholders(textDocument.getText(), selection, preDefinedNames)
                 .then((documentPlaceholders: Placeholder[]) => {
                     placeholdersDocument = documentPlaceholders;
                     var snippetPlaceholders = PyPa.placeholderIndicesToSnippet(documentPlaceholders, selection);
