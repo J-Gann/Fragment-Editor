@@ -157,7 +157,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
                             vscode.window.showInformationMessage("Successfully Added Parametrized Fragment");
                         },
                             (err: any) => {
-                                vscode.window.showErrorMessage("Parametrization Failed. Python Code not executable?");
+                                vscode.window.showWarningMessage("Parametrization Failed. Python Code not executable?");
                                 console.log("[W] | [FragmentProvider | addFragment]: Failed: " + err);
                                 var body = textDocument.getText(new vscode.Range(selection.start, selection.end));
                                 var newFragment = new Fragment({ label: label, body: body });

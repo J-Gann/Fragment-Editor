@@ -1,9 +1,5 @@
 import * as vscode from 'vscode';
 import { FragmentProvider } from './fragmentProvider';
-import { writeFile } from 'fs';
-import { stringify } from 'querystring';
-import { resolve } from 'url';
-import { rejects } from 'assert';
 
 const path = require('path');
 const fs = require('fs');
@@ -37,7 +33,7 @@ export class PyPa {
             var filePath = path.join(FragmentProvider.context.extensionPath, 'tmp', 'getAST.tmp');
             fs.writeFile(filePath, document, (err: any) => {
                 if (!err) {
-                    exec('python __main__.py -p -i ' + filePath, {cwd: pythonPath}, (error: any, stdout: string, stderr: string) => {
+                    exec(vscode.workspace.getConfiguration("fragmentEditor.parametrization").get("pythonCallStatement") + ' __main__.py -p -i ' + filePath, {cwd: pythonPath}, (error: any, stdout: string, stderr: string) => {
                         if (error) {
                             reject(error);
                         } else if (stderr) {
@@ -217,13 +213,25 @@ export class PyPa {
             var filePath = path.join(FragmentProvider.context.extensionPath, 'tmp', 'script.tmp');
             fs.writeFile(filePath, script, (err: any) => {
                 if (!err) {
-                    exec('python3 ' + filePath, (error: any, stdout: string, stderr: string) => {
+                    var oc = vscode.window.createOutputChannel("Executing Python Script ...");
+                    oc.append("Executing Python Script ...");
+                    oc.show();
+                    exec(vscode.workspace.getConfiguration("fragmentEditor.parametrization").get("pythonCallStatement") + " " + filePath, {timeout: vscode.workspace.getConfiguration("fragmentEditor.parametrization").get("pythonExecutionTimeout")}, (error: any, stdout: string, stderr: string) => {
                         if (error) {
+                            oc.appendLine("Error!");
+                            oc.hide();
                             reject(error);
+                            oc.dispose();
                         } else if (stderr) {
+                            oc.appendLine("Error!");
+                            oc.hide();
                             reject(stderr);
+                            oc.dispose();
                         } else {
+                            oc.appendLine("Done!");
+                            oc.hide();
                             resolve(stdout);
+                            oc.dispose();
                         }
                     });
                 } else {
