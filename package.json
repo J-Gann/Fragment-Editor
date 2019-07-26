@@ -1,12 +1,12 @@
 {
 	"name": "fragment-editor",
-	"displayName": "FragmentEditor",
-	"description": "",
+	"displayName": "Fragment Editor",
+	"description": "Editor to create and manage code snippets. Supports parametrization for Python.",
 	"version": "0.0.1",
 	"engines": {
 		"vscode": "^1.33.0"
 	},
-	"publisher": "frag.edit",
+	"publisher": "JonasGann",
 	"categories": [
 		"Other"
 	],
@@ -19,7 +19,7 @@
 			"title": "Fragment Editor",
 			"properties": {
 				"fragmentEditor.parametrization.pythonCallStatement": {
-					"type":"string",
+					"type": "string",
 					"default": "python3",
 					"description": "Define the statement how python scripts should be called"
 				},

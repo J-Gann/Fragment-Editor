@@ -295,7 +295,7 @@ export class PyPa {
         });
         return uniqueResult;
     }
-
+    
     static assignDatatypes(parsedScript: string[], placeholders: Placeholder[]) {
         parsedScript.forEach((datatype: string) => {
             var datatypeJSON = JSON.parse(datatype);
