@@ -131,10 +131,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
         if (editor) {
             selection = editor.selection;
             textDocument = editor.document;
-        } else {
-            vscode.window.showInformationMessage("No editor found");
         }
-
         const input = vscode.window.showInputBox({ prompt: "Input a label for the Fragment" });
         input.then((label) => {
             if (label === "") {
@@ -147,7 +144,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
                 vscode.window.showErrorMessage("Fragment Not Added (label has to be unique)");
                 console.log("[W] | [FragmentProvider | addFragment]: Failed");
             } else {
-                if (editor !== undefined && textDocument.fileName.match(/.*\.py$/)) {                 
+                if (editor !== undefined && textDocument.fileName.match(/.*\.py$/)) {
                     var result = PyPa.parametrize(textDocument, selection);
                     if (result !== undefined) {
                         result.then(obj => {
@@ -165,15 +162,8 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
                                 this.refresh();
                                 vscode.window.showInformationMessage("Added Fragment without Parametrization");
                             });
-                    } else {
-                        vscode.window.showInformationMessage("No Placeholders found");
-                        var body = textDocument.getText(new vscode.Range(selection.start, selection.end));
-                        var newFragment = new Fragment({ label: label, body: body });
-                        db.addFragment(newFragment);
-                        vscode.window.showInformationMessage("Added Fragment without Parametrization");
-                        this.refresh();
                     }
-                    
+
                 } else if (selection !== undefined) {
                     var body = textDocument.getText(new vscode.Range(selection.start, selection.end));
                     var newFragment = new Fragment({ label: label, body: body });

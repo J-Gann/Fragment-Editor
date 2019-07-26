@@ -26,7 +26,7 @@
 				"fragmentEditor.parametrization.pythonExecutionTimeout": {
 					"type": "integer",
 					"default": 10000,
-					"description": "Define the maximum execution time spent to determine the datatypes of placeholders in a selected python snippet"
+					"description": "Define the maximum execution time spent (ms) to determine the datatypes of placeholders in a selected python snippet"
 				}
 			}
 		},
