@@ -145,25 +145,35 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
                 console.log("[W] | [FragmentProvider | addFragment]: Failed");
             } else {
                 if (editor !== undefined && textDocument.fileName.match(/.*\.py$/)) {
-                    var result = PyPa.parametrize(textDocument, selection);
+                    var result = PyPa.parametrizeWithDatatypes(textDocument, selection);
                     if (result !== undefined) {
                         result.then(obj => {
                             var newFragment = new Fragment({ ...{ label: label }, ...obj });
                             db.addFragment(newFragment);
                             this.refresh();
-                            vscode.window.showInformationMessage("Successfully Added Parametrized Fragment");
-                        },
-                            (err: any) => {
-                                vscode.window.showWarningMessage("Parametrization Failed. Python Code not executable?");
-                                console.log("[W] | [FragmentProvider | addFragment]: Failed: " + err);
-                                var body = textDocument.getText(new vscode.Range(selection.start, selection.end));
-                                var newFragment = new Fragment({ label: label, body: body });
-                                db.addFragment(newFragment);
-                                this.refresh();
-                                vscode.window.showInformationMessage("Added Fragment without Parametrization");
-                            });
+                            vscode.window.showInformationMessage("Successfully Added Parametrized Fragment With Datatypes");
+                        }, (err: any) => {
+                            vscode.window.showWarningMessage("Calculation of Datatypes Failed. Python Code not executable?");
+                            console.log("[W] | [FragmentProvider | addFragment]: Failed to calculate datatypes for placeholders");
+                            var result = PyPa.parametrize(textDocument, selection);
+                            if (result !== undefined) {
+                                result.then(obj => {
+                                    var newFragment = new Fragment({ ...{ label: label }, ...obj });
+                                    db.addFragment(newFragment);
+                                    this.refresh();
+                                    vscode.window.showInformationMessage("Successfully Added Parametrized Fragment (without datatypes)");
+                                }, (err: any) => {
+                                    vscode.window.showWarningMessage("Parametrization Failed. Is this really Python code?");
+                                    console.log("[W] | [FragmentProvider | addFragment]: Failed to calculate parametrized fragment");
+                                    var body = textDocument.getText(new vscode.Range(selection.start, selection.end));
+                                    var newFragment = new Fragment({ label: label, body: body });
+                                    db.addFragment(newFragment);
+                                    this.refresh();
+                                    vscode.window.showInformationMessage("Added Fragment without Parametrization");
+                                })
+                            }
+                        });
                     }
-
                 } else if (selection !== undefined) {
                     var body = textDocument.getText(new vscode.Range(selection.start, selection.end));
                     var newFragment = new Fragment({ label: label, body: body });

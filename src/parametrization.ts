@@ -47,8 +47,10 @@ export class PyPa {
         var promise = new Promise((resolve, reject) => {
             exec(vscode.workspace.getConfiguration("fragmentEditor.parametrization").get("pythonCallStatement") + ' -V', (error: any, stdout: string, stderr: string) => {
                 if (error) {
+                    console.log("[E] | [PyPa | testPython]: Error while testing call statement for python: " + error);
                     reject(error);
                 } else if (stderr) {
+                    console.log("[E] | [PyPa | testPython]: Error while testing call statement for python: " + stderr);
                     reject(stderr);
                 } else {
                     resolve(stdout);
@@ -57,7 +59,7 @@ export class PyPa {
         });
         return promise;
     };
-    
+
 
 
     /**
@@ -66,20 +68,23 @@ export class PyPa {
      */
     static getAST(document: string): Promise<string | any> {
         var promise = new Promise((resolve, reject) => {
-            var pythonPath = path.join(FragmentProvider.context.extensionPath, 'src', 'python-astexport', 'astexport');
+            var pythonPath = path.join(FragmentProvider.context.extensionPath, 'src', 'astexport');
             var filePath = path.join(FragmentProvider.context.extensionPath, 'tmp', 'getAST.tmp');
             fs.writeFile(filePath, document, (err: any) => {
                 if (!err) {
                     exec(vscode.workspace.getConfiguration("fragmentEditor.parametrization").get("pythonCallStatement") + ' __main__.py -p -i ' + filePath, { cwd: pythonPath }, (error: any, stdout: string, stderr: string) => {
                         if (error) {
+                            console.log("[E] | [PyPa | getAST]: Error while calculating the AST: " + error);
                             reject(error);
                         } else if (stderr) {
+                            console.log("[E] | [PyPa | getAST]: Error while calculating the AST: " + stderr);
                             reject(stderr);
                         } else {
                             resolve(stdout);
                         }
                     });
                 } else {
+                    console.log("[E] | [PyPa | getAST]: Error while writing the temporary file: " + err);
                     reject(err);
                 }
             })
@@ -88,7 +93,7 @@ export class PyPa {
     };
 
     /**
-     * 
+     * Calculates the placeholders of a code snippet
      * @param documentCode Text of the document which contains the code snippet
      * @param selection The selected code snippet
      * @param preDefinedNames List of predefined python variables
@@ -168,12 +173,16 @@ export class PyPa {
                     resolve(uniquePlaceholders);
                 })
                 .catch((error: any) => {
+                    console.log("[E] | [PyPa | getPlaceholders]: Error while calculating the AST");
                     reject(error)
                 })
         });
         return promise;
     }
 
+    /**
+     * Transforms the indices of placeholders extracted from a document to the corresponding indices in a snippet
+     */
     static placeholderIndicesToSnippet(placeholders: Placeholder[], selection: vscode.Selection): Placeholder[] {
         var lineOffset = selection.start.line;
         placeholders.forEach((placeholder: Placeholder) => {
@@ -182,6 +191,12 @@ export class PyPa {
         return placeholders;
     }
 
+    /**
+     * Calculates a body where the names of all placeholders are replaced by a parametrized string: {index:name}
+     * @param textDocument Original document which contains the snippet
+     * @param selection Selection of the snippet
+     * @param placeholders Previously calculated placeholders
+     */
     static parametrizedSnippet(textDocument: vscode.TextDocument, selection: vscode.Selection, placeholders: Placeholder[]): string {
         var snippet = textDocument.getText(new vscode.Range(selection.start, selection.end));
         var placeholdersCopy = clonedeep(placeholders);
@@ -211,6 +226,12 @@ export class PyPa {
         return snippet;
     }
 
+    /**
+     * Modifies the original python document to print the datatype of each placeholder
+     * @param textDocument Original document which contains the snippet
+     * @param selection Selection of the snippet
+     * @param placeholders Previously calculated placeholders
+     */
     static createScript(textDocument: vscode.TextDocument, selection: vscode.Selection, placeholders: Placeholder[]): string {
         var snippet = textDocument.getText(new vscode.Range(selection.start, selection.end));
         var placeholdersCopy = clonedeep(placeholders);
@@ -235,6 +256,9 @@ export class PyPa {
         return detType + textDocument.getText(new vscode.Range(textDocument.positionAt(0), selection.start)) + snippet + textDocument.getText(new vscode.Range(selection.end, new vscode.Position(textDocument.lineCount, textDocument.lineAt(textDocument.lineCount - 1).text.length)));
     }
 
+    /**
+     * Sorts placeholders by line and column
+     */
     static sortPlaceholders(placeholders: Placeholder[]): Placeholder[] {
         placeholders.sort((a: Placeholder, b: Placeholder) => {
             if (a.lineno < b.lineno) {
@@ -248,6 +272,10 @@ export class PyPa {
         return placeholders;
     }
 
+    /**
+     * Executes a python script and collects the output
+     * @param script Script to be executed
+     */
     static executeScript(script: string): Promise<string | any> {
         var promise = new Promise((resolve, reject) => {
             var filePath = path.join(FragmentProvider.context.extensionPath, 'tmp', 'script.tmp');
@@ -259,9 +287,11 @@ export class PyPa {
                     exec(vscode.workspace.getConfiguration("fragmentEditor.parametrization").get("pythonCallStatement") + " " + filePath, { timeout: vscode.workspace.getConfiguration("fragmentEditor.parametrization").get("pythonExecutionTimeout") }, (error: any, stdout: string, stderr: string) => {
                         if (error) {
                             oc.appendLine(error);
+                            console.log("[E] | [PyPa | executeScript]: Error while executing the script: " + error);
                             reject(error);
                         } else if (stderr) {
                             oc.appendLine(stderr);
+                            console.log("[E] | [PyPa | executeScript]: Error while executing the script: " + stderr);
                             reject(stderr);
                         } else {
                             oc.appendLine("Done!");
@@ -271,6 +301,7 @@ export class PyPa {
                         }
                     });
                 } else {
+                    console.log("[E] | [PyPa | executeScript]: Error while writing the temporary file: " + err);
                     reject(err);
                 }
             });
@@ -278,6 +309,10 @@ export class PyPa {
         return promise;
     }
 
+    /**
+     * Extracts the useful information from the output of the python script
+     * @param output Output of the script created by 'createScript'
+     */
     static parseScriptOutput(output: string): string[] {
         var result = output.split("\r\n").filter(value => {
             if (value.match(/^\{"id": .*, "type": .*\}$/)) {
@@ -295,7 +330,10 @@ export class PyPa {
         });
         return uniqueResult;
     }
-    
+
+    /**
+     * Assings the calculated datatypes to the corresponding placeholders
+     */
     static assignDatatypes(parsedScript: string[], placeholders: Placeholder[]) {
         parsedScript.forEach((datatype: string) => {
             var datatypeJSON = JSON.parse(datatype);
@@ -308,24 +346,36 @@ export class PyPa {
         return placeholders;
     }
 
+    /**
+     * Formats the result of the parametrization
+     * @param placeholders Final list of placeholders which should be saved
+     * @param snippet Body corresponding to the placeholders which should be saved
+     */
     static formatResult(placeholders: Placeholder[], snippet: string): { body: string, placeholders: string } | undefined {
         var placeholderString = "";
         placeholders.forEach((placeholder: Placeholder) => {
-            placeholderString += "{" + placeholder.index + ":" + placeholder.name + ":" + placeholder.datatype + "}" + ", ";
+            if(placeholder.datatype !== undefined) {
+                placeholderString += "{" + placeholder.index + ":" + placeholder.name + ":" + placeholder.datatype + "}" + ", ";
+            } else {
+                placeholderString += "{" + placeholder.index + ":" + placeholder.name + "}" + ", ";
+            }
         });
-
         return { body: snippet, placeholders: placeholderString };
-
     }
 
-    static parametrize(textDocument: vscode.TextDocument, selection: vscode.Selection): Promise<{ body: string, placeholders: string }> {
+    /**
+     * Parametrizes the selected code snippet
+     * @param textDocument Text document containing the selection
+     * @param selection Selection of a code snippet
+     */
+    static parametrizeWithDatatypes(textDocument: vscode.TextDocument, selection: vscode.Selection): Promise<{ body: string, placeholders: string }> {
         var placeholdersDocument: Placeholder[] = [];
         var placeholdersSnippet: Placeholder[] = [];
         var body = "";
         var preDefinedNames = ["abs", "delattr", "hash", "memoryview", "set", "all", "dict", "help", "min", "setattr", "any", "dir", "hex", "next", "slice", "ascii", "divmod", "id", "object", "sorted", "bin", "enumerate",
-        "input", "oct", "staticmethod", "bool", "eval", "int", "open", "str", "breakpoint", "exec", "isinstance", "ord", "sum", "bytearray", "filter", "issubclass", "pow", "super", "bytes", "float",
-        "iter", "print", "tuple", "callable", "format", "len", "property", "type", "chr", "frozenset", "list", "range", "vars", "classmethod", "getattr", "locals", "repr", "zip", "compile", "globals",
-        "map", "reversed", "__import__", "complex", "hasattr", "max", "round"]
+            "input", "oct", "staticmethod", "bool", "eval", "int", "open", "str", "breakpoint", "exec", "isinstance", "ord", "sum", "bytearray", "filter", "issubclass", "pow", "super", "bytes", "float",
+            "iter", "print", "tuple", "callable", "format", "len", "property", "type", "chr", "frozenset", "list", "range", "vars", "classmethod", "getattr", "locals", "repr", "zip", "compile", "globals",
+            "map", "reversed", "__import__", "complex", "hasattr", "max", "round"]
 
         var promise = new Promise<{ body: string, placeholders: string } | any>((resolve, reject) => {
 
@@ -353,10 +403,49 @@ export class PyPa {
                     resolve(PyPa.formatResult(placeholdersSnippet, body));
                 })
                 .catch((err) => {
+                    var oc = vscode.window.createOutputChannel("Execution Error");
+                    oc.append("Execution Error\n---------------------\n\n" + err);
+                    oc.append("\n\Calculation of datatypes is still work in progress. Internal errors occuring during execution might be displayed");
+                    oc.show();
+                    console.log("[E] | [PyPa | parametrizeWithDatatypes]: Error while parametrizing with datatypes: " + err);
+                    reject(err);
+                })
+        });
+        return promise;
+    }
+
+    static parametrize(textDocument: vscode.TextDocument, selection: vscode.Selection) {
+        var placeholdersDocument: Placeholder[] = [];
+        var placeholdersSnippet: Placeholder[] = [];
+        var body = "";
+        var preDefinedNames = ["abs", "delattr", "hash", "memoryview", "set", "all", "dict", "help", "min", "setattr", "any", "dir", "hex", "next", "slice", "ascii", "divmod", "id", "object", "sorted", "bin", "enumerate",
+            "input", "oct", "staticmethod", "bool", "eval", "int", "open", "str", "breakpoint", "exec", "isinstance", "ord", "sum", "bytearray", "filter", "issubclass", "pow", "super", "bytes", "float",
+            "iter", "print", "tuple", "callable", "format", "len", "property", "type", "chr", "frozenset", "list", "range", "vars", "classmethod", "getattr", "locals", "repr", "zip", "compile", "globals",
+            "map", "reversed", "__import__", "complex", "hasattr", "max", "round"]
+
+        var promise = new Promise<{ body: string, placeholders: string } | any>((resolve, reject) => {
+
+            PyPa.testPython()
+                .then(() => PyPa.getPlaceholders(textDocument.getText(), selection, preDefinedNames))
+                .then((documentPlaceholders: Placeholder[]) => {
+                    placeholdersDocument = documentPlaceholders;
+                    var snippetPlaceholders = PyPa.placeholderIndicesToSnippet(documentPlaceholders, selection);
+                    return snippetPlaceholders;
+                })
+                .then((snippetPlaceholders: Placeholder[]) => PyPa.sortPlaceholders(snippetPlaceholders))
+                .then((sortedSnippetPlaceholders: Placeholder[]) => {
+                    placeholdersSnippet = sortedSnippetPlaceholders;
+                    body =  PyPa.parametrizedSnippet(textDocument, selection, sortedSnippetPlaceholders);
+                })
+                .then(() => {
+                    resolve(PyPa.formatResult(placeholdersSnippet, body));
+                })
+                .catch((err) => {
                     var oc = vscode.window.createOutputChannel("Parametrization Error");
                     oc.append("Parametrization Error\n---------------------\n\n" + err);
-                    oc.append("\n\nParametrization is still work in progress. Internal errors occuring during parametrization might be displayed");
+                    oc.append("\n\Calculation of placeholders is still work in progress. Internal errors occuring during parametrization might be displayed");
                     oc.show();
+                    console.log("[E] | [PyPa | parametrize]: Error while parametrizing: " + err);
                     reject(err);
                 })
         });
