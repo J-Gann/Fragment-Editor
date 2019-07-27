@@ -15,7 +15,7 @@ export class TreeItem extends vscode.TreeItem {
             this._tag = undefined;
             this._fragment = undefined;
             this.collapsibleState = 1;
-            this.command = {command: "fragmentEditor.edittag", title: "Edit tag", arguments: [this]};
+            this.command = { command: "fragmentEditor.edittag", title: "Edit tag", arguments: [this] };
         } else if (this.contextValue === "fragment") {
             this._childs = undefined;
             if (parameter.tag !== undefined) {
@@ -29,7 +29,7 @@ export class TreeItem extends vscode.TreeItem {
                 this._fragment = undefined;
             }
             this.collapsibleState = 0;
-            this.command = {command: "fragmentEditor.editFragment", title: "Edit Fragment", arguments: [this]};
+            this.command = { command: "fragmentEditor.editFragment", title: "Edit Fragment", arguments: [this] };
         } else {
             console.log("[W] | [TreeItem | constructor]: Failed");
         }
@@ -40,11 +40,11 @@ export class TreeItem extends vscode.TreeItem {
      * A Fragment is represented by a seperate TreeItem for each tag it is assigned to.
      */
 
-        // Properties for a TreeItem (inherited by vscode.TreeItem)
-        // label: string;           // Naming of the TreeItem.
-        // contextValue: string;    // Destinction between type of 'tag' and 'fragment' of the TreeItem.
+    // Properties for a TreeItem (inherited by vscode.TreeItem)
+    // label: string;           // Naming of the TreeItem.
+    // contextValue: string;    // Destinction between type of 'tag' and 'fragment' of the TreeItem.
 
-        // Properties for a tag TreeItem
+    // Properties for a tag TreeItem
     private _childs: string[] | undefined; // Labels of TreeItems that are childs of the tag. Only TreeItemy of type 'fragment' can be a child.
 
     get childs(): string[] | undefined {
@@ -68,11 +68,19 @@ export class TreeItem extends vscode.TreeItem {
     private _tag: string | undefined;      // The label of a TreeItem of type 'tag' the TreeItem of type 'fragment' is assigned to.
 
     get tag(): string | undefined {
-        if (this.contextValue === "fragment") {
+        if (this.contextValue === "fragment" && this._tag !== undefined) {
             return this._tag;
         } else {
             console.log("[W] | [TreeItem | get tag]: Failed for TreeItem: " + this.label);
             return undefined;
+        }
+    }
+
+    hasTag(): boolean {
+        if (this._tag !== undefined) {
+            return true;
+        } else {
+            return false;
         }
     }
 
