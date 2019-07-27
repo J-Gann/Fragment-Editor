@@ -68,7 +68,7 @@ export class PyPa {
      */
     static getAST(document: string): Promise<string | any> {
         var promise = new Promise((resolve, reject) => {
-            var pythonPath = path.join(FragmentProvider.context.extensionPath, 'src', 'astexport');
+            var pythonPath = path.join(FragmentProvider.context.extensionPath, 'out', 'astexport');
             var filePath = path.join(FragmentProvider.context.extensionPath, 'tmp', 'getAST.tmp');
             fs.writeFile(filePath, document, (err: any) => {
                 if (!err) {
