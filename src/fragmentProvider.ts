@@ -178,7 +178,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
                     var body = textDocument.getText(new vscode.Range(selection.start, selection.end));
                     var newFragment = new Fragment({ label: label, body: body });
                     db.addFragment(newFragment);
-                    if (!textDocument.fileName.match(/.*\.py$/)) {
+                    if (textDocument !== undefined && !textDocument.fileName.match(/.*\.py$/)) {
                         vscode.window.showInformationMessage("Parametrization only Supported for Python");
                     }
                     vscode.window.showInformationMessage("Added Fragment without Parametrization");

@@ -1,4 +1,0 @@
--> db im user home path
-- database sollte in globalStoragePath liegen, weil extensionPath bei extension update gewiped wird und somit die Datenbank weg ist.
-- Packagen nur in Linux oder auch auf Windows, wenn ihr die line ending Einstellungen in dem Repo ändert. Wird das in Windows gepackaged haben die Datein crlf line endings und damit
-  kommt Linux nicht klar (Windows hat umgekehrt kein Problem mit Linux lf line endings)
