@@ -7,6 +7,7 @@ import {TreeItem} from './treeItem';
 import * as path from "path";
 const shell = require("shelljs");
 import * as fs from "fs";
+import { PyPa } from './parametrization';
 
 export function activate(context: vscode.ExtensionContext) {
     Database.setDefaultPath(path.join(context.extensionPath, "data"));
@@ -44,7 +45,8 @@ export function activate(context: vscode.ExtensionContext) {
     var treeView = vscode.window.createTreeView('fragmentEditor', {treeDataProvider: fragmentProvider});
     vscode.commands.registerCommand('fragmentEditor.addFragment', () => fragmentProvider.addFragment());
     vscode.commands.registerCommand('fragmentEditor.editFragment', (treeItem: TreeItem) => fragmentProvider.editFragment(treeItem));
-    vscode.commands.registerCommand('fragmentEditor.deleteTreeItem', (treeItem: TreeItem) => fragmentProvider.deleteTreeItem(treeItem));
+	vscode.commands.registerCommand('fragmentEditor.deleteTreeItem', (treeItem: TreeItem) => fragmentProvider.deleteTreeItem(treeItem));
+	vscode.commands.registerCommand('fragmentEditor.killProcess', () => PyPa.killProcess());
 
     // refreshes the Fragmentlist everytime a change in the database is detected (5 sec intervall)
 	fs.watchFile(Database.getDefaultPath() + '/fragments.db', (curr, prev) => {

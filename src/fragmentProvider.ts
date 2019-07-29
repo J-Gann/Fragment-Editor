@@ -153,7 +153,6 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
                             this.refresh();
                             vscode.window.showInformationMessage("Successfully Added Parametrized Fragment With Datatypes");
                         }, (err: any) => {
-                            vscode.window.showWarningMessage("Calculation of Datatypes Failed. Python Code not executable?");
                             console.log("[W] | [FragmentProvider | addFragment]: Failed to calculate datatypes for placeholders");
                             var result = PyPa.parametrize(textDocument, selection);
                             if (result !== undefined) {
@@ -163,7 +162,6 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
                                     this.refresh();
                                     vscode.window.showInformationMessage("Successfully Added Parametrized Fragment (without datatypes)");
                                 }, (err: any) => {
-                                    vscode.window.showWarningMessage("Parametrization Failed. Is this really Python code?");
                                     console.log("[W] | [FragmentProvider | addFragment]: Failed to calculate parametrized fragment");
                                     var body = textDocument.getText(new vscode.Range(selection.start, selection.end));
                                     var newFragment = new Fragment({ label: label, body: body });

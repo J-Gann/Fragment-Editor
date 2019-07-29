@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const jp = require('jsonpath');
 const exec = require('child_process').exec;
+const execFile = require('child_process').execFile;
 const clonedeep = require('lodash.clonedeep');
 
 class Placeholder {
@@ -22,7 +23,6 @@ class Placeholder {
         this.id = lineno + "|" + col_offset;
     }
 }
-
 /**
  * PyPa (Python Parametrization) computes placeholders and the corresponding datatypes of a code snippet for any executable python script.
  * 
@@ -39,6 +39,12 @@ class Placeholder {
  * The output is then collected and processed.
  */
 export class PyPa {
+
+    static processPID: Number;
+
+    static killProcess() {
+        require('tree-kill')(PyPa.processPID);
+    }
 
     /**
      * Test if the call statement defined in the config is at least recognised.
@@ -60,8 +66,6 @@ export class PyPa {
         return promise;
     };
 
-
-
     /**
      * Computes an abstract syntax tree
      * @param document Text for which a python ast should be computed
@@ -72,7 +76,7 @@ export class PyPa {
             var filePath = path.join(FragmentProvider.context.extensionPath, 'tmp', 'getAST.tmp');
             fs.writeFile(filePath, document, (err: any) => {
                 if (!err) {
-                    exec(vscode.workspace.getConfiguration("fragmentEditor.parametrization").get("pythonCallStatement") + ' __main__.py -p -i ' + filePath, { cwd: pythonPath }, (error: any, stdout: string, stderr: string) => {
+                    var process = exec(vscode.workspace.getConfiguration("fragmentEditor.parametrization").get("pythonCallStatement") + ' __main__.py -p -i ' + filePath, { cwd: pythonPath }, (error: any, stdout: string, stderr: string) => {
                         if (error) {
                             console.log("[E] | [PyPa | getAST]: Error while calculating the AST: " + error);
                             reject(error);
@@ -284,22 +288,32 @@ export class PyPa {
                     var oc = vscode.window.createOutputChannel("Executing Python Script ...");
                     oc.append("Executing Python Script ...\n");
                     oc.show();
-                    exec(vscode.workspace.getConfiguration("fragmentEditor.parametrization").get("pythonCallStatement") + " " + filePath, { timeout: vscode.workspace.getConfiguration("fragmentEditor.parametrization").get("pythonExecutionTimeout") }, (error: any, stdout: string, stderr: string) => {
+                    var statusItem = vscode.window.createStatusBarItem();
+                    statusItem.command = "fragmentEditor.killProcess";
+                    statusItem.text = "Kill Process";
+                    statusItem.color = "red"
+                    statusItem.show();
+                    var child = exec(vscode.workspace.getConfiguration("fragmentEditor.parametrization").get("pythonCallStatement") + " " + filePath, { detached: true }, (error: any, stdout: string, stderr: string) => {
                         if (error) {
                             oc.appendLine(error);
                             console.log("[E] | [PyPa | executeScript]: Error while executing the script: " + error);
+                            statusItem.hide();
                             reject(error);
                         } else if (stderr) {
                             oc.appendLine(stderr);
                             console.log("[E] | [PyPa | executeScript]: Error while executing the script: " + stderr);
+                            statusItem.hide();
                             reject(stderr);
                         } else {
                             oc.appendLine("Done!");
                             oc.hide();
                             resolve(stdout);
+                            statusItem.hide();
                             oc.dispose();
                         }
                     });
+                    this.processPID = child.pid;
+
                 } else {
                     console.log("[E] | [PyPa | executeScript]: Error while writing the temporary file: " + err);
                     reject(err);
@@ -405,7 +419,8 @@ export class PyPa {
                 .catch((err) => {
                     var oc = vscode.window.createOutputChannel("Execution Error");
                     oc.append("Execution Error\n---------------------\n\n" + err);
-                    oc.append("\n\Calculation of datatypes is still work in progress. Internal errors occuring during execution might be displayed");
+                    oc.appendLine("\n\nFailed to compute datatypes of placeholders. Is the python code executable?");
+                    oc.append("Calculation of datatypes is still work in progress. Internal errors occuring during execution might be displayed");
                     oc.show();
                     console.log("[E] | [PyPa | parametrizeWithDatatypes]: Error while parametrizing with datatypes: " + err);
                     reject(err);
