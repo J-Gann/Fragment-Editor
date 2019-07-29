@@ -3,3 +3,5 @@ out/*
 .vscode-test/
 out/frag.extract.host/extract.py
 node_modules
+tmp/*
+external/astexport/__pycache__

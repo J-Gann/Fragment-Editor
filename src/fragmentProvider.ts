@@ -124,14 +124,15 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
      */
     addFragment(): void {
         var editor = vscode.window.activeTextEditor;
-        var selection: vscode.Selection;
-        var textDocument: vscode.TextDocument;
+        var selection: vscode.Selection | undefined = undefined;
+        var textDocument: vscode.TextDocument | undefined = undefined;
         const db: Database = Database.getInstance();
 
-        if (editor) {
+        if (editor !== undefined) {
             selection = editor.selection;
             textDocument = editor.document;
         }
+        
         const input = vscode.window.showInputBox({ prompt: "Input a label for the Fragment" });
         input.then((label) => {
             if (label === "") {
@@ -144,46 +145,47 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
                 vscode.window.showErrorMessage("Fragment Not Added (label has to be unique)");
                 console.log("[W] | [FragmentProvider | addFragment]: Failed");
             } else {
-                if (editor !== undefined && textDocument.fileName.match(/.*\.py$/)) {
-                    var result = PyPa.parametrizeWithDatatypes(textDocument, selection);
-                    if (result !== undefined) {
+                if (editor !== undefined && textDocument !== undefined && selection !== undefined) {
+                    if (textDocument.fileName.match(/.*\.py$/)) {
+                        var result = PyPa.parametrizeWithDatatypes(textDocument, selection);
                         result.then(obj => {
+                            // Add Fragment with parametrization and datatypes
                             var newFragment = new Fragment({ ...{ label: label }, ...obj });
                             db.addFragment(newFragment);
                             this.refresh();
                             vscode.window.showInformationMessage("Successfully Added Parametrized Fragment With Datatypes");
                         }, (err: any) => {
                             console.log("[W] | [FragmentProvider | addFragment]: Failed to calculate datatypes for placeholders");
-                            var result = PyPa.parametrize(textDocument, selection);
-                            if (result !== undefined) {
-                                result.then(obj => {
-                                    var newFragment = new Fragment({ ...{ label: label }, ...obj });
-                                    db.addFragment(newFragment);
-                                    this.refresh();
-                                    vscode.window.showInformationMessage("Successfully Added Parametrized Fragment (without datatypes)");
-                                }, (err: any) => {
-                                    console.log("[W] | [FragmentProvider | addFragment]: Failed to calculate parametrized fragment");
-                                    var body = textDocument.getText(new vscode.Range(selection.start, selection.end));
-                                    var newFragment = new Fragment({ label: label, body: body });
-                                    db.addFragment(newFragment);
-                                    this.refresh();
-                                    vscode.window.showInformationMessage("Added Fragment without Parametrization");
-                                })
-                            }
+                            var result = PyPa.parametrize(textDocument!, selection!);
+                            result.then(obj => {
+                                // Add Fragment with parametrization
+                                var newFragment = new Fragment({ ...{ label: label }, ...obj });
+                                db.addFragment(newFragment);
+                                this.refresh();
+                                vscode.window.showInformationMessage("Successfully Added Parametrized Fragment (without datatypes)");
+                            }, (err: any) => {
+                                // Add Fragment
+                                console.log("[W] | [FragmentProvider | addFragment]: Failed to calculate parametrized fragment");
+                                var body = textDocument!.getText(new vscode.Range(selection!.start, selection!.end));
+                                var newFragment = new Fragment({ label: label, body: body });
+                                db.addFragment(newFragment);
+                                this.refresh();
+                                vscode.window.showInformationMessage("Added Fragment");
+                            })
                         });
+                    } else {
+                        // Add Fragment 
+                        var body = textDocument.getText(new vscode.Range(selection.start, selection.end));
+                        var newFragment = new Fragment({ label: label, body: body });
+                        db.addFragment(newFragment);
+                        vscode.window.showInformationMessage("Added Fragment");
+                        this.refresh();
                     }
-                } else if (selection !== undefined) {
-                    var body = textDocument.getText(new vscode.Range(selection.start, selection.end));
-                    var newFragment = new Fragment({ label: label, body: body });
-                    db.addFragment(newFragment);
-                    if (!textDocument.fileName.match(/.*\.py$/)) {
-                        vscode.window.showInformationMessage("Parametrization only Supported for Python");
-                    }
-                    vscode.window.showInformationMessage("Added Fragment without Parametrization");
-                    this.refresh();
                 } else {
+                    // Add empty Fragment
                     var newFragment = new Fragment({ label: label });
                     db.addFragment(newFragment);
+                    vscode.window.showInformationMessage("Added Empty Fragment");
                     this.refresh();
                 }
             }

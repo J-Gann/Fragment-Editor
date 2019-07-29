@@ -9,9 +9,7 @@ const shell = require("shelljs");
 import * as fs from "fs";
 import { PyPa } from './parametrization';
 
-export function activate(context: vscode.ExtensionContext) {
-    Database.setDefaultPath(path.join(context.extensionPath, "data"));
-    
+export function activate(context: vscode.ExtensionContext) {    
     // install process upon first activation
 	if (!fs.existsSync(context.globalStoragePath)) {
 		fs.mkdirSync(context.globalStoragePath);

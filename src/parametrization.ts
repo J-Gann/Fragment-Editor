@@ -409,7 +409,7 @@ export class PyPa {
                 })
                 .catch((err) => {
                     var oc = vscode.window.createOutputChannel("Execution Error");
-                    oc.append("Execution Error\n---------------------\n\n" + err);
+                    oc.append("Execution Error\n---------------\n\n" + err);
                     oc.appendLine("\n\nFailed to compute datatypes of placeholders. Is the python code executable? Does python code terminate eventually? Is the correct python call statement configured (python2, python3, etc.)");
                     oc.append("Calculation of datatypes is still work in progress. Internal errors occuring during execution might be displayed");
                     oc.show();
@@ -449,7 +449,7 @@ export class PyPa {
                 .catch((err) => {
                     var oc = vscode.window.createOutputChannel("Parametrization Error");
                     oc.append("Parametrization Error\n---------------------\n\n" + err);
-                    oc.append("\n\Calculation of placeholders is still work in progress. Internal errors occuring during parametrization might be displayed");
+                    oc.append("\n\nCalculation of placeholders is still work in progress. Internal errors occuring during parametrization might be displayed");
                     oc.show();
                     console.log("[E] | [PyPa | parametrize]: Error while parametrizing: " + err);
                     reject(err);
