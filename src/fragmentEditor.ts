@@ -117,7 +117,7 @@ export class FragmentEditor {
             Body: <textarea id="body" rows="16">${fragment.body}</textarea>
             Scope: <input id="scope" type="text" value="${fragment.scope}">
             Domain: <div class="domains chips-autocomplete"></div>
-            Placeholders: <input style="color:lightgrey;" id="placeholders" type="text" value="${fragment.placeholders}" disabled>
+            Placeholders: <input style="color:lightgrey;" id="placeholders" type="text" value="${fragment.placeholders}" >
 
             <script>
                 var tags;

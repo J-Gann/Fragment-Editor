@@ -78,6 +78,7 @@ export class PyPa {
                             console.log("[E] | [PyPa | getAST]: Error while calculating the AST: " + stderr);
                             reject(stderr);
                         } else {
+                            console.log(stdout)
                             resolve(stdout);
                         }
                     });
@@ -101,6 +102,8 @@ export class PyPa {
             PyPa.getAST(documentCode)
                 .then((value: string) => {
                     var jsonAST = JSON.parse(value);
+
+                    // (Hopefully) All variables which get declared inside the snippet
                     var declarations: any[] = [];
                     var assignmentDeclarations = jp.query(jsonAST, '$..[?(@.ast_type=="Assign")].targets.*');
                     var forLoopTargetDeclarations = jp.query(jsonAST, '$..[?(@.ast_type=="For")].target');
@@ -114,12 +117,14 @@ export class PyPa {
                     });
                     declarations = declarations.concat(assignmentDeclarations, forLoopTargetDeclarations, functionDeclarations, functionDefParamDeclarations);
 
+                    // (Hopefully) All variables which are parameters inside the snippet
                     var parameters: any[] = [];
                     var expressionParameters = jp.query(jsonAST, '$..[?(@.ast_type=="Expr")]..[?(@.ast_type=="Name")]');
                     var compareParameters = jp.query(jsonAST, '$..[?(@.ast_type=="Compare")]..[?(@.ast_type=="Name")]');
                     var returnParameters = jp.query(jsonAST, '$..[?(@.ast_type=="Return")]..[?(@.ast_type=="Name")]');
                     var callParameters = jp.query(jsonAST, '$..[?(@.ast_type=="Call")]..[?(@.ast_type=="Name")]');
-                    parameters = parameters.concat(expressionParameters, compareParameters, returnParameters, callParameters);
+                    var forLoopIterParameter = jp.query(jsonAST, '$..[?(@.ast_type=="For")].iter');
+                    parameters = parameters.concat(expressionParameters, compareParameters, returnParameters, callParameters, forLoopIterParameter);
 
                     var selectionStartLine = selection.start.line + 1;
                     var selectionEndLine = selection.end.line + 1;
