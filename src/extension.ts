@@ -46,7 +46,6 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('fragmentEditor.addFragment', () => fragmentProvider.addFragment());
     vscode.commands.registerCommand('fragmentEditor.editFragment', (treeItem: TreeItem) => fragmentProvider.editFragment(treeItem));
 	vscode.commands.registerCommand('fragmentEditor.deleteTreeItem', (treeItem: TreeItem) => fragmentProvider.deleteTreeItem(treeItem));
-	vscode.commands.registerCommand('fragmentEditor.killProcess', () => PyPa.killProcess());
 
     // refreshes the Fragmentlist everytime a change in the database is detected (5 sec intervall)
 	fs.watchFile(Database.getDefaultPath() + '/fragments.db', (curr, prev) => {

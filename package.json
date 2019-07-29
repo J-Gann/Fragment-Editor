@@ -52,10 +52,6 @@
 			{
 				"command": "fragmentEditor.deleteTreeItem",
 				"title": "Delete"
-			},
-			{
-				"command": "fragmentEditor.killProcess",
-				"title": "Kill Process"
 			}
 		],
 		"menus": {

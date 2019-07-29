@@ -40,12 +40,6 @@ class Placeholder {
  */
 export class PyPa {
 
-    static processPID: Number;
-
-    static killProcess() {
-        require('tree-kill')(PyPa.processPID);
-    }
-
     /**
      * Test if the call statement defined in the config is at least recognised.
      */
@@ -281,46 +275,43 @@ export class PyPa {
      * @param script Script to be executed
      */
     static executeScript(script: string): Promise<string | any> {
-        var promise = new Promise((resolve, reject) => {
-            var filePath = path.join(FragmentProvider.context.extensionPath, 'tmp', 'script.tmp');
-            fs.writeFile(filePath, script, (err: any) => {
-                if (!err) {
-                    var oc = vscode.window.createOutputChannel("Executing Python Script ...");
-                    oc.append("Executing Python Script ...\n");
-                    oc.show();
-                    var statusItem = vscode.window.createStatusBarItem();
-                    statusItem.command = "fragmentEditor.killProcess";
-                    statusItem.text = "Kill Process";
-                    statusItem.color = "red"
-                    statusItem.show();
-                    var child = exec(vscode.workspace.getConfiguration("fragmentEditor.parametrization").get("pythonCallStatement") + " " + filePath, { detached: true }, (error: any, stdout: string, stderr: string) => {
-                        if (error) {
-                            oc.appendLine(error);
-                            console.log("[E] | [PyPa | executeScript]: Error while executing the script: " + error);
-                            statusItem.hide();
-                            reject(error);
-                        } else if (stderr) {
-                            oc.appendLine(stderr);
-                            console.log("[E] | [PyPa | executeScript]: Error while executing the script: " + stderr);
-                            statusItem.hide();
-                            reject(stderr);
-                        } else {
-                            oc.appendLine("Done!");
-                            oc.hide();
-                            resolve(stdout);
-                            statusItem.hide();
-                            oc.dispose();
-                        }
-                    });
-                    this.processPID = child.pid;
-
-                } else {
-                    console.log("[E] | [PyPa | executeScript]: Error while writing the temporary file: " + err);
-                    reject(err);
-                }
+        var resPromise = vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: "Executing Python Code",
+            cancellable: true
+        }, (progress, token) => {
+            var promise = new Promise<string | any>((resolve, reject) => {
+                var filePath = path.join(FragmentProvider.context.extensionPath, 'tmp', 'script.tmp');
+                fs.writeFile(filePath, script, (err: any) => {
+                    if (!err) {
+                        var child = exec(vscode.workspace.getConfiguration("fragmentEditor.parametrization").get("pythonCallStatement") + " " + filePath, { detached: true }, (error: any, stdout: string, stderr: string) => {
+                            if (error) {
+                                reject(error);
+                            } else if (stderr) {
+                                reject(stderr);
+                            } else {
+                                resolve(stdout);
+                            }
+                        });
+                        token.onCancellationRequested(() => {
+                            require('tree-kill')(child.pid);
+                        });
+                    } else {
+                        console.log("[E] | [PyPa | executeScript]: Error while writing the temporary file: " + err);
+                        reject(err);
+                    }
+                });
             });
+            return promise;
         });
-        return promise;
+
+        return new Promise((resolve, reject) => {
+            resPromise.then((success) => {
+                resolve(success);
+            }, (error) => {
+                reject(error);
+            })
+        });
     }
 
     /**
@@ -368,7 +359,7 @@ export class PyPa {
     static formatResult(placeholders: Placeholder[], snippet: string): { body: string, placeholders: string } | undefined {
         var placeholderString = "";
         placeholders.forEach((placeholder: Placeholder) => {
-            if(placeholder.datatype !== undefined) {
+            if (placeholder.datatype !== undefined) {
                 placeholderString += "{" + placeholder.index + ":" + placeholder.name + ":" + placeholder.datatype + "}" + ", ";
             } else {
                 placeholderString += "{" + placeholder.index + ":" + placeholder.name + "}" + ", ";
@@ -419,7 +410,7 @@ export class PyPa {
                 .catch((err) => {
                     var oc = vscode.window.createOutputChannel("Execution Error");
                     oc.append("Execution Error\n---------------------\n\n" + err);
-                    oc.appendLine("\n\nFailed to compute datatypes of placeholders. Is the python code executable?");
+                    oc.appendLine("\n\nFailed to compute datatypes of placeholders. Is the python code executable? Does python code terminate eventually? Is the correct python call statement configured (python2, python3, etc.)");
                     oc.append("Calculation of datatypes is still work in progress. Internal errors occuring during execution might be displayed");
                     oc.show();
                     console.log("[E] | [PyPa | parametrizeWithDatatypes]: Error while parametrizing with datatypes: " + err);
@@ -450,7 +441,7 @@ export class PyPa {
                 .then((snippetPlaceholders: Placeholder[]) => PyPa.sortPlaceholders(snippetPlaceholders))
                 .then((sortedSnippetPlaceholders: Placeholder[]) => {
                     placeholdersSnippet = sortedSnippetPlaceholders;
-                    body =  PyPa.parametrizedSnippet(textDocument, selection, sortedSnippetPlaceholders);
+                    body = PyPa.parametrizedSnippet(textDocument, selection, sortedSnippetPlaceholders);
                 })
                 .then(() => {
                     resolve(PyPa.formatResult(placeholdersSnippet, body));
