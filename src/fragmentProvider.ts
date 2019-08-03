@@ -119,6 +119,29 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
         }
     }
 
+    addEmptyFragment(): void {
+        const db: Database = Database.getInstance();
+        const input = vscode.window.showInputBox({ prompt: "Input a label for the Fragment" });
+        input.then((label) => {
+            if (label === "") {
+                vscode.window.showErrorMessage("Fragment Not Added (no empty label allowed)");
+                console.log("[W] | [FragmentProvider | addFragment]: Failed");
+            } else if (label === undefined) {
+                vscode.window.showErrorMessage("Fragment Not Added");
+                console.log("[W] | [FragmentProvider | addFragment]: Failed");
+            } else if (db.getTreeItem(label)) {
+                vscode.window.showErrorMessage("Fragment Not Added (label has to be unique)");
+                console.log("[W] | [FragmentProvider | addFragment]: Failed");
+            } else {
+                // Add empty Fragment
+                var newFragment = new Fragment({ label: label });
+                db.addFragment(newFragment);
+                vscode.window.showInformationMessage("Added Empty Fragment");
+                this.refresh();
+            }
+        });
+    }
+
     /**
      * Creates a new fragment by opening a input dialog to enter a new label
      */
@@ -132,7 +155,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
             selection = editor.selection;
             textDocument = editor.document;
         }
-        
+
         const input = vscode.window.showInputBox({ prompt: "Input a label for the Fragment" });
         input.then((label) => {
             if (label === "") {
