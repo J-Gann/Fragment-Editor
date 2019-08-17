@@ -78,7 +78,6 @@ export class PyPa {
                             console.log("[E] | [PyPa | getAST]: Error while calculating the AST: " + stderr);
                             reject(stderr);
                         } else {
-                            console.log(stdout)
                             resolve(stdout);
                         }
                     });
@@ -109,14 +108,18 @@ export class PyPa {
                     var forLoopTargetDeclarations = jp.query(jsonAST, '$..[?(@.ast_type=="For")].target');
                     var functionDeclarations = jp.query(jsonAST, '$..[?(@.ast_type=="FunctionDef")]');
                     var functionDefParamDeclarations = jp.query(jsonAST, '$..[?(@.ast_type=="FunctionDef")].args.args.*');
-                    functionDefParamDeclarations.forEach((definition: any) => {
-                        definition.id = definition.arg;
-                    });
-                    functionDeclarations.forEach((definition: any) => {
-                        definition.id = definition.name;
-                    });
-                    declarations = declarations.concat(assignmentDeclarations, forLoopTargetDeclarations, functionDeclarations, functionDefParamDeclarations);
-
+                    var lambdaDeclarations = jp.query(jsonAST, '$..[?(@.ast_type=="Lambda")].args.args.*');
+                    declarations = declarations.concat(assignmentDeclarations, forLoopTargetDeclarations, functionDeclarations, functionDefParamDeclarations, lambdaDeclarations);
+                    declarations.forEach((decl: any) => {
+                        if (decl.name !== undefined) {
+                            decl.id = decl.name;
+                            delete decl.name;
+                        }
+                        if (decl.arg !== undefined) {
+                            decl.id = decl.arg;
+                            delete decl.arg;
+                        }
+                    })
                     // (Hopefully) All variables which are parameters inside the snippet
                     var parameters: any[] = [];
                     var expressionParameters = jp.query(jsonAST, '$..[?(@.ast_type=="Expr")]..[?(@.ast_type=="Name")]');
@@ -125,7 +128,16 @@ export class PyPa {
                     var callParameters = jp.query(jsonAST, '$..[?(@.ast_type=="Call")]..[?(@.ast_type=="Name")]');
                     var forLoopIterParameter = jp.query(jsonAST, '$..[?(@.ast_type=="For")].iter');
                     parameters = parameters.concat(expressionParameters, compareParameters, returnParameters, callParameters, forLoopIterParameter);
-
+                    parameters.forEach((param: any) => {
+                        if (param.name !== undefined) {
+                            param.id = param.name;
+                            delete param.name;
+                        }
+                        if (param.arg !== undefined) {
+                            param.id = param.arg;
+                            delete param.arg;
+                        }
+                    })       
                     var selectionStartLine = selection.start.line + 1;
                     var selectionEndLine = selection.end.line + 1;
 
@@ -151,6 +163,7 @@ export class PyPa {
                     parametersInSelection.forEach((parameter: { col_offset: number, id: string, lineno: number }) => {
                         var defined = false;
                         declarationsInSelection.forEach((declaration: { col_offset: number, id: string, lineno: number }) => {
+
                             if (parameter.id === declaration.id && declaration.lineno <= parameter.lineno) {
                                 defined = true;
                             }
@@ -159,7 +172,6 @@ export class PyPa {
                             placeholders.push(new Placeholder(parameter.id, parameter.col_offset, parameter.lineno));
                         }
                     });
-
                     var uniquePlaceholders: Placeholder[] = [];
                     placeholders.forEach((placeholder: Placeholder) => {
                         var exists = false;
@@ -172,7 +184,6 @@ export class PyPa {
                             uniquePlaceholders.push(placeholder);
                         }
                     });
-
                     resolve(uniquePlaceholders);
                 })
                 .catch((error: any) => {
