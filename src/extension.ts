@@ -4,12 +4,17 @@ import * as vscode from 'vscode';
 import {FragmentProvider} from './fragmentProvider';
 import {Database} from './database';
 import {TreeItem} from './treeItem';
-import * as path from "path";
 const shell = require("shelljs");
 import * as fs from "fs";
 import { PyPa } from './parametrization';
+const rimraf = require("rimraf");
+const path = require("path");
+
 
 export function activate(context: vscode.ExtensionContext) {    
+	// Delete temporary files on restart
+	rimraf(path.join(context.extensionPath, 'tmp/*'), () => {});
+
     // install process upon first activation
 	if (!fs.existsSync(context.globalStoragePath)) {
 		fs.mkdirSync(context.globalStoragePath);

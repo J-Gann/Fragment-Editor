@@ -1,7 +1,10 @@
-import {Fragment} from "./fragment";
+import { Fragment } from "./fragment";
 import * as vscode from 'vscode';
-import {Database} from "./database";
-import {FragmentProvider} from "./fragmentProvider";
+import { Database } from "./database";
+import { FragmentProvider } from "./fragmentProvider";
+import { PyPa } from './parametrization';
+const fs = require('fs-extra');
+const path = require('path')
 
 export class FragmentEditor {
     panel: any;
@@ -51,6 +54,22 @@ export class FragmentEditor {
                     this.panel.dispose();
                     this.panel.onDidDispose();
                     return;
+                case 'param':
+                    var body = message.text;
+                    const filePath: string = path.join(FragmentProvider.context.extensionPath, 'tmp', Math.random() * 1000 + '.py');
+                    fs.writeFile(filePath, body)
+                        .then(() => {
+                            // This creates some mediocre bug: For every session, a new textDocument gets created in the backround and cant be closed. The corresponding file on disk however will be deleted. A restart of the editor should eventually delete the cached textDocument.
+                            vscode.workspace.openTextDocument(filePath)
+                                .then((textDocument: vscode.TextDocument) => {
+                                    PyPa.parametrize(textDocument, new vscode.Selection(new vscode.Position(0, 0), new vscode.Position(textDocument.lineCount - 1, textDocument.lineAt(textDocument.lineCount - 1).text.length)))
+                                        .then((result: any) => {
+                                            this.panel.webview.postMessage({ command: 'param', body: result.body, placeholders: result.placeholders });
+                                            fs.unlink(filePath);
+                                        })
+                                })
+
+                        })
             }
         }, undefined, this.context.subscriptions);
     }
@@ -68,13 +87,13 @@ export class FragmentEditor {
 
         const path = require("path");
         let onDiskPath = vscode.Uri.file(path.join(this.context.extensionPath, 'external/materialize', 'materialize.css'));
-        const style = onDiskPath.with({scheme: 'vscode-resource'});
+        const style = onDiskPath.with({ scheme: 'vscode-resource' });
 
         onDiskPath = vscode.Uri.file(path.join(this.context.extensionPath, 'external/materialize', 'materialize.js'));
-        const js = onDiskPath.with({scheme: 'vscode-resource'});
+        const js = onDiskPath.with({ scheme: 'vscode-resource' });
 
         onDiskPath = vscode.Uri.file(path.join(this.context.extensionPath, 'external/materialize', 'googleicons.css'));
-        const googleicons = onDiskPath.with({scheme: 'vscode-resource'});
+        const googleicons = onDiskPath.with({ scheme: 'vscode-resource' });
 
         this.panel.webview.html = this.getWebviewContent(fragment, style, js, googleicons);
         this.panel.reveal();
@@ -114,7 +133,10 @@ export class FragmentEditor {
             Keywords: <input id="keywords" type="text" value="${fragment.keywords}">
             Tags: <div class="tags chips-autocomplete"></div>
             Prefix: <input id="prefix" type="text" value="${fragment.prefix}">
+            <br><br>
             Body: <textarea id="body" rows="16">${fragment.body}</textarea>
+            <button onclick="parametrizeFunction()" class="btn waves-effect waves-light" type="submit" name="action">Parametrize as Python</button>
+            <br><br>
             Scope: <input id="scope" type="text" value="${fragment.scope}">
             Domain: <div class="domains chips-autocomplete"></div>
             Placeholders: <input style="color:lightgrey;" id="placeholders" type="text" value="${fragment.placeholders}" >
@@ -142,17 +164,16 @@ export class FragmentEditor {
                     vscode.postMessage({command: 'cancel', text: ''});
                 }
 
-                function parametrize() {
-                    vscode.postMessage({command: 'parametrize', text: document.getElementById("body").value});
+                function parametrizeFunction() {
+                    vscode.postMessage({command: 'param', text: document.getElementById("body").value});
                 }
 
                 window.addEventListener('message', event => {
                     const message = event.data;
                     switch(message.command) {
-                        case 'parametrize':
-                            document.getElementById("body").value = message.text.body;
-                            document.getElementById("keywords").value = message.text.keywords;
-                            document.getElementById("placeholders").value = message.text.placeholders;
+                        case 'param':
+                            document.getElementById("body").value = message.body;
+                            document.getElementById("placeholders").value = message.placeholders;
                             return;
                     }
                 });

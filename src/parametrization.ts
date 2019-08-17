@@ -126,7 +126,7 @@ export class PyPa {
                     var compareParameters = jp.query(jsonAST, '$..[?(@.ast_type=="Compare")]..[?(@.ast_type=="Name")]');
                     var returnParameters = jp.query(jsonAST, '$..[?(@.ast_type=="Return")]..[?(@.ast_type=="Name")]');
                     var callParameters = jp.query(jsonAST, '$..[?(@.ast_type=="Call")]..[?(@.ast_type=="Name")]');
-                    var forLoopIterParameter = jp.query(jsonAST, '$..[?(@.ast_type=="For")].iter');
+                    var forLoopIterParameter = jp.query(jsonAST, '$..[?(@.ast_type=="For")]..[?(@.ast_type=="Name")]');
                     parameters = parameters.concat(expressionParameters, compareParameters, returnParameters, callParameters, forLoopIterParameter);
                     parameters.forEach((param: any) => {
                         if (param.name !== undefined) {

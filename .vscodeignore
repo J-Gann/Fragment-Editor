@@ -9,5 +9,5 @@ vsc-extension-quickstart.md
 **/tslint.json
 **/*.map
 **/*.ts
-notes.txt
 out/frag.extract.host/extract.py
+tmp

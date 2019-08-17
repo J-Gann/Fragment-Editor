@@ -106,11 +106,11 @@ suite("PyPa", () => {
     test("Parametrization of simple loop", function () {
         const content: string =
             'y = 0' + '\n' +
-            'for x in range(10):' + '\n' +
             '' + '\n' +
+            'for x in range(10):' + '\n' +
             '   y + 1' + '\n' +
             ''
-        const selection: vscode.Selection = new vscode.Selection(new vscode.Position(2, 0), new vscode.Position(4, 0));
+        const selection: vscode.Selection = new vscode.Selection(new vscode.Position(1, 0), new vscode.Position(4, 0));
         return testPyPa(content, selection, 'test4.py', ["{0:y:<class 'int'>}"], ["{0:y}"])
     });
     test("Parametrization of simple lambda function", function () {
