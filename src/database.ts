@@ -67,6 +67,8 @@ export class Database {
     }
 
     loadFragments(): void {
+        const filebuffer = fs.readFileSync(this._fragmentFile);
+        this._fragmentDatabase = new sql.Database(filebuffer);
         const res = this._fragmentDatabase.exec("SELECT * FROM fragments")[0];
         if (res === undefined) {
             return;
