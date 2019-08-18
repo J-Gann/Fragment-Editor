@@ -385,7 +385,7 @@ export class PyPa {
     }
 
     /**
-     * Parametrizes the selected code snippet
+     * Parametrizes the selected code snippet and compute datatypes
      * @param textDocument Text document containing the selection
      * @param selection Selection of a code snippet
      */
@@ -436,6 +436,11 @@ export class PyPa {
         return promise;
     }
 
+    /**
+     * Parametrizes the selected code snippet and do not compute datatypes
+     * @param textDocument Text document containing the selection
+     * @param selection Selection of a code snippet
+     */
     static parametrize(textDocument: vscode.TextDocument, selection: vscode.Selection) {
         var placeholdersDocument: Placeholder[] = [];
         var placeholdersSnippet: Placeholder[] = [];
