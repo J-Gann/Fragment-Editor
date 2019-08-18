@@ -55,15 +55,20 @@ Following properties of the extension are configurable
 
 ## Internal Structure of the Extension
 
-The Extension consists of 3 main Parts:
+The Extension consists of 5 main Parts:
+- Fragment
 - Database
 - Tree View 
 - Parametrization Algorithm
 - Fragment Editor
 
-The database manages the creation and storage of Fragments and Tags, the Tree View displays all stored Fragments and Tags and the parametrization algorithm provides the main functionality of the extension: Parametrization of python Fragments. The Fragment Editor enables the user to look at and modify the properties of every Fragment.
+The Fragment is an object which contains important properties of a code snippet. 
+The database manages creation and storage of Fragments and Tags, the Tree View displays all stored Fragments and Tags and the parametrization algorithm provides the main functionality of the extension: Parametrization of python Fragments. The Fragment Editor enables the user to look at and modify the properties of every Fragment.
 
-The logic of the extension is located in the 'src' file. The database is implemented in the file 'database.ts' and utilises sqlite. The Tree View (the junction of the extension) is implemented in the file 'fragmentProvider.ts'. Most of the functionality the user can access through the GUI is defined here. The parametrization algorithm called PyPa is implemented in the file 'parametrization.ts'. The Fragment Editor is implemented in the file 'fragmentEditor.ts'.
+The logic of the extension is located in the 'src' file. The Fragment is implemented  in the file 'fragments.ts'. It is the goal of the extension to enable the creation, modification and overall management of these Fragments. The database is implemented in the file 'database.ts' and utilises sqlite. The Tree View (the junction of the extension) is implemented in the file 'fragmentProvider.ts'. Most of the functionality the user can access through the GUI is defined here. The parametrization algorithm called PyPa is implemented in the file 'parametrization.ts'. The Fragment Editor is implemented in the file 'fragmentEditor.ts'.
+
+### Fragment
+The Fragment contains typical properties of a code snippet like label, description, prefix, body and scope but also contains some additional information for management in the editor like tags, placeholders, keywords and domain.
 
 ### Database
 The database utilises sqlite. It saves Fragments on disk and loads them all into memory on startup. The database is defined to be located at the homedirectory inside a folder called 'fragments'. The corresponding file gets automatically created if it does not exist. The database contains several utility methods for managing Fragments in order to f.e. add Fragments, delete Fragments and update Fragments.
