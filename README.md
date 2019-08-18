@@ -25,15 +25,15 @@ When the Extension is installed, a new Tree View Container should appear on the 
 
 In order to structure the Fragments in folders the tag property of Fragments can be edited. A tag, when created in the tag property of a Fragment, will appear as a folder in the Tree View and contains all Fragments which have this tag added to their tag property.
 
-![Add Tag](https://j.gifs.com/ZYp856.gif)
+![Add Tag](https://j.gifs.com/K1m8Kr.gif)
 
 In order to create Fragments out of an existing document select the text you want to add as a Fragment then press the right mouse button. In the appearing menue press 'Add Fragment' and give it a name. If the document has a '.py' ending the extension will try to determine placeholders and their datatypes. Corresponding information and warning visualisations will appear. It is important that in order to determine datatypes the extension will try to execute the document which contains the selected code snippet.
 
-![Add Tag](https://j.gifs.com/NLpONz.gif)
+![Parametrize Fragment](https://j.gifs.com/NLpONz.gif)
 
 If the execution takes too long, it can be cancelled using the button 'Cancel' which appears on the bottom right.
 
-![Add Tag](https://j.gifs.com/q7DQJr.gif)
+![Cancel Execution](https://j.gifs.com/q7DQJr.gif)
 
 To execute the python code the extension uses the (configurable) call statement 'python3' by default.
 
