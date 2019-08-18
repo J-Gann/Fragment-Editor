@@ -10,4 +10,4 @@ vsc-extension-quickstart.md
 **/*.map
 **/*.ts
 out/frag.extract.host/extract.py
-tmp
+tmp/*

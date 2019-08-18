@@ -14,12 +14,14 @@ A placeholder is considered to be a variable which is used but not declared insi
 - Edit the properties of a Fragment with a simple editor
 - Delete Fragments from the Tree View
 - Parametrize code snippets written in python
-- Calculate datatypes of placeholders if python code is executable
-- Sorting of Fragments in folders by assigning tags to each Fragment
+- Calculate datatypes of placeholders for executable python code
+- Sorting of Fragments using folders by assigning tags to each Fragment
 
 ## Usage
 
-When the Extension is installed, a new Tree View Container should appear on the left side of the editor. This container contains the Fragment Editor Tree View. This Tree View will be populated by created Fragments. To create an empty Frgment, click on the box to the top right of the Tree View. Enter the name of the Fragment, then press enter. The name of the Fragment should now appear in the Tree View on the left. If you click on the name a editor should open. With this editor almost avery property of the Fragment can be edited and saved with the button 'save' on the top right.
+When the Extension is installed, a new Tree View Container should appear on the left side of the editor. This container displays the Fragment Editor Tree View. This Tree View will be populated by created Fragments. To create an empty Frgment, click on the box to the top right of the Tree View. Enter the name of the Fragment, then press enter. The name of the Fragment should now appear in the Tree View on the left. If you click on the name a editor should open. With this editor almost avery property of the Fragment can be edited and saved with the button 'save' on the top right.
+
+![Add Empty Fragment](https://gifs.com/gif/add-empty-fragment-wVZ0Xw)
 
 In order to structure the Fragments in folders the tag property of Fragments can be edited. A tag, when created in the tag property of a Fragment, will appear as a folder in the Tree View and contains all Fragments which have this tag added to their tag property.
 
