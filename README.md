@@ -19,23 +19,32 @@ A placeholder is considered to be a variable which is used but not declared insi
 
 ## Usage
 
+### Adding Empty Fragments
 When the Extension is installed, a new Tree View Container should appear on the left side of the editor. This container displays the Fragment Editor Tree View. This Tree View will be populated by created Fragments. To create an empty Frgment, click on the box to the top right of the Tree View. Enter the name of the Fragment, then press enter. The name of the Fragment should now appear in the Tree View on the left. If you click on the name a editor should open. With this editor properties of the Fragment can be edited and saved with the button 'save' on the top right.
 
 ![Add Empty Fragment](https://j.gifs.com/4Q46g6.gif)
+
+### Adding Tags
 
 In order to structure the Fragments in folders the tag property of Fragments can be edited. A tag, when created in the tag property of a Fragment, will appear as a folder in the Tree View and contains all Fragments which have this tag added to their tag property.
 
 ![Add Tag](https://j.gifs.com/K1m8Kr.gif)
 
+### Parametrizing Fragments
+
 In order to create Fragments out of an existing document select the text you want to add as a Fragment then press the right mouse button. In the appearing menue press 'Add Fragment' and give it a name. If the document has a '.py' ending the extension will try to determine placeholders and their datatypes. Corresponding information and warning visualisations will appear. It is important that in order to determine datatypes the extension will try to execute the document which contains the selected code snippet.
 
 ![Parametrize Fragment](https://j.gifs.com/NLpONz.gif)
+
+### Canceling Execution
 
 If the execution takes too long, it can be cancelled using the button 'Cancel' which appears on the bottom right.
 
 ![Cancel Execution](https://j.gifs.com/q7DQJr.gif)
 
 To execute the python code the extension uses the (configurable) call statement 'python3' by default.
+
+### Parametrization inside Fragment Editor
 
 If an already saved Fragment should be parametrized (because it was f.e. added the frag.Extract Addon) the button 'Parametrize as Python' in the Fragment Editor beneath the body property can be used. This tries to extract placeholders from the Fragment assuming the Fragment's language is Python. Notice, that datatypes of placeholders can't be determined in this case.
 
@@ -63,7 +72,7 @@ The Extension consists of 5 main Parts:
 - Fragment Editor
 
 The Fragment is an object which contains important properties of a code snippet. 
-The database manages creation and storage of Fragments and Tags, the Tree View displays all stored Fragments and Tags and the parametrization algorithm provides the main functionality of the extension: Parametrization of python Fragments. The Fragment Editor enables the user to look at and modify the properties of every Fragment.
+The database manages creation and storage of Fragments and Tags. The Tree View displays all stored Fragments and Tags and the parametrization algorithm provides the main functionality of the extension: Parametrization of python Fragments. The Fragment Editor enables the user to look at and modify the properties of every Fragment.
 
 The logic of the extension is located in the 'src' file. The Fragment is implemented  in the file 'fragments.ts'. It is the goal of the extension to enable the creation, modification and overall management of these Fragments. The database is implemented in the file 'database.ts' and utilises sqlite. The Tree View (the junction of the extension) is implemented in the file 'fragmentProvider.ts'. Most of the functionality the user can access through the GUI is defined here. The parametrization algorithm called PyPa is implemented in the file 'parametrization.ts'. The Fragment Editor is implemented in the file 'fragmentEditor.ts'.
 
@@ -73,7 +82,7 @@ The Fragment contains typical properties of a code snippet like label, descripti
 ### Database
 The database utilises sqlite. It saves Fragments on disk and loads them all into memory on startup. The database is defined to be located at the homedirectory inside a folder called 'fragments'. The corresponding file gets automatically created if it does not exist. The database contains several utility methods for managing Fragments in order to f.e. add Fragments, delete Fragments and update Fragments.
 
-Besides Fragments, the Database class stores TreeItems (not persistent) inside a Map and contains several utility functions for these similar to those for Fragments.
+Besides Fragments, the database class stores TreeItems (not persistent) inside a Map and contains several utility functions for these similar to those for Fragments.
 
 The database als stores Tags and Domains (not persistent) for convenience. They get calculated by going through the corresponding properties of all Fragments.
 
