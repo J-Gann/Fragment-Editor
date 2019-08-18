@@ -23,20 +23,21 @@ class Placeholder {
         this.id = lineno + "|" + col_offset;
     }
 }
+
 /**
  * PyPa (Python Parametrization) computes placeholders and the corresponding datatypes of a code snippet for any executable python script.
- * 
- * In order to retrieve placeholders, the AST of the python code gets created and ported in JSON format (using astexport).
+ 
+ * In order to retrieve placeholders, the AST (abstract syntax tree) of the python code gets created and ported in JSON format (using astexport).
  * The AST includes information about which variables are defined and which are used as parameter.
  * Every variable which is used as parameter but is not defined within a code snippet is considered a placeholder.
- * In order to retrieve the datatype of the placeholders, the original python code gets dynamically modified and executed.
+ * In order to find these placeholders, the ast is queried for declared and used variables using jsonpath.
+ * In order to retrieve the datatype of found placeholders, the original python code gets modified and executed.
  * The following code is inserted at the beginning:
  * def detType(id, x):
  *      print('{\"id\": \"' + str(id) + '\", \"type\": ' + '\"' + str(type(x)) + '\"' + '}')
  *      return x
  * Every placeholder gets replaced by a call of this function with the name of the placeholder (string) as first parameter and the value of the placeholder (any datatype) as second parameter.
- * This function prints the corresponding datatype for each placeholder during runtime.
- * The output is then collected and processed.
+ * This function prints the corresponding datatype for each placeholder during runtime. The output is then collected and processed.
  */
 export class PyPa {
 
@@ -102,7 +103,12 @@ export class PyPa {
                 .then((value: string) => {
                     var jsonAST = JSON.parse(value);
 
-                    // (Hopefully) All variables which get declared inside the snippet
+                    /* ### This is the heart of determinig placeholders ###
+                    *  Using jsonpath, the ast is searched for used and declared variables.
+                    *  If some placeholder is not included in the result of PyPa, most likely a query for that case is missing for the list of parameters.
+                    *  If some placeholder is wrongefully included in the result of PyPa, most likely a query for that case is missing for the list of declarations.
+                    */
+
                     var declarations: any[] = [];
                     var assignmentDeclarations = jp.query(jsonAST, '$..[?(@.ast_type=="Assign")].targets.*');
                     var forLoopTargetDeclarations = jp.query(jsonAST, '$..[?(@.ast_type=="For")].target');
@@ -110,6 +116,15 @@ export class PyPa {
                     var functionDefParamDeclarations = jp.query(jsonAST, '$..[?(@.ast_type=="FunctionDef")].args.args.*');
                     var lambdaDeclarations = jp.query(jsonAST, '$..[?(@.ast_type=="Lambda")].args.args.*');
                     declarations = declarations.concat(assignmentDeclarations, forLoopTargetDeclarations, functionDeclarations, functionDefParamDeclarations, lambdaDeclarations);
+
+                    var parameters: any[] = [];
+                    var expressionParameters = jp.query(jsonAST, '$..[?(@.ast_type=="Expr")]..[?(@.ast_type=="Name")]');
+                    var compareParameters = jp.query(jsonAST, '$..[?(@.ast_type=="Compare")]..[?(@.ast_type=="Name")]');
+                    var returnParameters = jp.query(jsonAST, '$..[?(@.ast_type=="Return")]..[?(@.ast_type=="Name")]');
+                    var callParameters = jp.query(jsonAST, '$..[?(@.ast_type=="Call")]..[?(@.ast_type=="Name")]');
+                    var forLoopIterParameter = jp.query(jsonAST, '$..[?(@.ast_type=="For")]..[?(@.ast_type=="Name")]');
+                    parameters = parameters.concat(expressionParameters, compareParameters, returnParameters, callParameters, forLoopIterParameter);
+
                     declarations.forEach((decl: any) => {
                         if (decl.name !== undefined) {
                             decl.id = decl.name;
@@ -120,14 +135,7 @@ export class PyPa {
                             delete decl.arg;
                         }
                     })
-                    // (Hopefully) All variables which are parameters inside the snippet
-                    var parameters: any[] = [];
-                    var expressionParameters = jp.query(jsonAST, '$..[?(@.ast_type=="Expr")]..[?(@.ast_type=="Name")]');
-                    var compareParameters = jp.query(jsonAST, '$..[?(@.ast_type=="Compare")]..[?(@.ast_type=="Name")]');
-                    var returnParameters = jp.query(jsonAST, '$..[?(@.ast_type=="Return")]..[?(@.ast_type=="Name")]');
-                    var callParameters = jp.query(jsonAST, '$..[?(@.ast_type=="Call")]..[?(@.ast_type=="Name")]');
-                    var forLoopIterParameter = jp.query(jsonAST, '$..[?(@.ast_type=="For")]..[?(@.ast_type=="Name")]');
-                    parameters = parameters.concat(expressionParameters, compareParameters, returnParameters, callParameters, forLoopIterParameter);
+
                     parameters.forEach((param: any) => {
                         if (param.name !== undefined) {
                             param.id = param.name;
@@ -137,7 +145,8 @@ export class PyPa {
                             param.id = param.arg;
                             delete param.arg;
                         }
-                    })       
+                    })
+
                     var selectionStartLine = selection.start.line + 1;
                     var selectionEndLine = selection.end.line + 1;
 

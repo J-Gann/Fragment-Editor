@@ -119,6 +119,9 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
         }
     }
 
+    /**
+     * Add an empty fragment
+     */
     addEmptyFragment(): void {
         const db: Database = Database.getInstance();
         const input = vscode.window.showInputBox({ prompt: "Input a label for the Fragment" });
@@ -216,7 +219,7 @@ export class FragmentProvider implements vscode.TreeDataProvider<TreeItem> {
     }
 
     /**
-     * Deletes a TreeItemcorresponding to a Fragment. This deletes the tag corresponding to this TreeItem in the properties of the Fragment.
+     * Deletes a TreeItemcorresponding to a Fragment. In case the TreeItem is a tag, the tag gets deleted from the Fragment, in case it is a Fragment, the Fragment gets deleted
      * @param treeItem
      */
     deleteTreeItem(treeItem: TreeItem): void {

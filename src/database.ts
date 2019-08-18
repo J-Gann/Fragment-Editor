@@ -1,13 +1,13 @@
-import {Fragment} from "./fragment";
+import { Fragment } from "./fragment";
 import sql = require('sql.js');
 import fs = require("fs");
-import {TreeItem} from "./treeItem";
+import { TreeItem } from "./treeItem";
 import * as path from "path";
 
 export class Database {
     private static _default_path: string;
     private static _instance: Database;
-    
+
     private _fragmentDatabase: any;
     private _fragmentFile: string;
     private _fragmentPath: string;
@@ -24,21 +24,21 @@ export class Database {
     }
 
     static getInstance(): Database {
-        if ( Database._instance === undefined ) {
+        if (Database._instance === undefined) {
 
             if (Database._default_path === undefined) {
                 Database._default_path = path.join(require('os').homedir(), "fragments");
             }
-          Database._instance = new Database(Database._default_path, "fragments.db");
+            Database._instance = new Database(Database._default_path, "fragments.db");
         }
         return Database._instance;
     }
 
-    static setDefaultPath(path: string) : void {
+    static setDefaultPath(path: string): void {
         this._default_path = path;
     }
 
-    static getDefaultPath() : string {
+    static getDefaultPath(): string {
         return this._default_path;
     }
 

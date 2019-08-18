@@ -59,10 +59,47 @@ The Extension consists of 3 main Parts:
 - Database
 - Tree View 
 - Parametrization Algorithm
+- Fragment Editor
 
-The database manages the creation and storage of Fragments and Tags, the Tree View displays all stored Fragments and Tags and the parametrization algorithm provides the main functionality of the extension: Parametrization of python Fragments.
+The database manages the creation and storage of Fragments and Tags, the Tree View displays all stored Fragments and Tags and the parametrization algorithm provides the main functionality of the extension: Parametrization of python Fragments. The Fragment Editor enables the user to look at and modify the properties of every Fragment.
 
-The logic of the extension is located in the 'src' file. The database is implemented in the file 'database.ts' and utilises sqlite. The Tree View (the junction of the extension) is implemented in the file 'fragmentProvider.ts'. Most of the functionality the user can access through the GUI is defined here. The parametrization algorithm called PyPa is implemented in the file 'parametrization.ts'.
+The logic of the extension is located in the 'src' file. The database is implemented in the file 'database.ts' and utilises sqlite. The Tree View (the junction of the extension) is implemented in the file 'fragmentProvider.ts'. Most of the functionality the user can access through the GUI is defined here. The parametrization algorithm called PyPa is implemented in the file 'parametrization.ts'. The Fragment Editor is implemented in the file 'fragmentEditor.ts'.
+
+### Database
+The database utilises sqlite. It saves Fragments on disk and loads them all into memory on startup. The database is defined to be located at the homedirectory inside a folder called 'fragments'. The corresponding file gets automatically created if it does not exist. The database contains several utility methods for managing Fragments in order to f.e. add Fragments, delete Fragments and update Fragments.
+
+Besides Fragments, the Database class stores TreeItems (not persistent) inside a Map and contains several utility functions for these similar to those for Fragments.
+
+The database als stores Tags and Domains (not persistent) for convenience. They get calculated by going through the corresponding properties of all Fragments.
+
+### Fragment Provider
+As the name suggests, this class provides Fragments to the editor, in this case, as entries to the Tree View. What is displayed in the Tree View are not actually the Fragments themselves but an object called treeItem. These treeItems can either appear as a Tag or as a Fragment, depending on how they were instantiated. A treeItem with the contextValue "fragment" appears with the label of it's assigned fragment in the treeView. A treeItem with the contextValue "tag" appears as a folder with it's initialized name in the TreeView. This folder can contain multiple treeItems with contextValue "fragment" which have a fragment assigned that contains the tag of the folder in its tag propertie. The method 'createTreeStructure' creates all necessary treeItems for the stored Fragments dynamically. The method 'getChildren' gets called by the Tree View and displays all TreeItems the function returns.
+
+The Fragment Provider contains several functions which can be called by the ser from the GUI:
+- editFragment: Open the editor for the given fragment
+- addEmptyFragment: Add an empty fragment
+- addFragment: Add a fragment by selecting a snippet inside a textDocument
+- deleteTreeItem: Delete the given treeitem (In case the TreeItem is a tag, the tag gets deleted from the Fragment, in case it is a Fragment, the Fragment gets deleted)
+
+### Parametrization
+PyPa (Python Parametrization) computes placeholders and the corresponding datatypes of a code snippet for any executable python script.
+ 
+In order to retrieve placeholders, the AST (abstract syntax tree) of the python code gets created and ported in JSON format (using astexport).
+The AST includes information about which variables are defined and which are used as parameter.
+Every variable which is used as parameter but is not defined within a code snippet is considered a placeholder.
+In order to find these placeholders, the ast is queried for declared and used variables using jsonpath.
+In order to retrieve the datatype of found placeholders, the original python code gets modified and executed.
+The following code is inserted at the beginning:
+```Python
+def detType(id, x):
+     print('{\"id\": \"' + str(id) + '\", \"type\": ' + '\"' + str(type(x)) + '\"' + '}')
+     return x
+```
+Every placeholder gets replaced by a call of this function with the name of the placeholder (string) as first parameter and the value of the placeholder (any datatype) as second parameter.
+This function prints the corresponding datatype for each placeholder during runtime. The output is then collected and processed.
+
+### Fragment Editor
+The Fragment Editor is implemented using a Web View. Through vscode specific API's the communication between Web View and Extension is possible and therefore enables the modification of Fragments through the Web View with according updates in the Database.
 
 ## TODOs
 

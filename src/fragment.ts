@@ -50,7 +50,7 @@ export class Fragment extends vscode.TreeItem {
         }
         this._snippet = Fragment.createSnippet(this);
         this._object = obj;
-        this.command = {command: "fragmentEditor.editEntry", title: "Edit Node", arguments: [this]};
+        this.command = { command: "fragmentEditor.editEntry", title: "Edit Node", arguments: [this] };
     }
 
     // properties of the vscode snippet
