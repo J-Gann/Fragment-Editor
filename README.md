@@ -19,7 +19,7 @@ A placeholder is considered to be a variable which is used but not declared insi
 
 ## Usage
 
-When the Extension is installed, a new Tree View Container should appear on the left side of the editor. This container displays the Fragment Editor Tree View. This Tree View will be populated by created Fragments. To create an empty Frgment, click on the box to the top right of the Tree View. Enter the name of the Fragment, then press enter. The name of the Fragment should now appear in the Tree View on the left. If you click on the name a editor should open. With this editor almost avery property of the Fragment can be edited and saved with the button 'save' on the top right.
+When the Extension is installed, a new Tree View Container should appear on the left side of the editor. This container displays the Fragment Editor Tree View. This Tree View will be populated by created Fragments. To create an empty Frgment, click on the box to the top right of the Tree View. Enter the name of the Fragment, then press enter. The name of the Fragment should now appear in the Tree View on the left. If you click on the name a editor should open. With this editor properties of the Fragment can be edited and saved with the button 'save' on the top right.
 
 ![Add Empty Fragment](https://j.gifs.com/4Q46g6.gif)
 
@@ -36,6 +36,11 @@ If the execution takes too long, it can be cancelled using the button 'Cancel' w
 ![Cancel Execution](https://j.gifs.com/q7DQJr.gif)
 
 To execute the python code the extension uses the (configurable) call statement 'python3' by default.
+
+If an already saved Fragment should be parametrized (because it was f.e. added the frag.Extract Addon) the button 'Parametrize as Python' in the Fragment Editor beneath the body property can be used. This tries to extract placeholders from the Fragment assuming the Fragment's language is Python. Notice, that datatypes of placeholders can't be determined in this case.
+
+![Parametrize in Editor](https://j.gifs.com/4Q46E2.gif)
+
 
 ## Extension Settings
 
@@ -57,7 +62,7 @@ The Extension consists of 3 main Parts:
 
 The database manages the creation and storage of Fragments and Tags, the Tree View displays all stored Fragments and Tags and the parametrization algorithm provides the main functionality of the extension: Parametrization of python Fragments.
 
-The logic of the extension is located in the 'src' file. The database is implemented in the file 'database.ts' and utilises sqlite. The Tree View (the junction of the extension) is implemented in the file 'fragmentProvider.ts'. Most of the functionality the user can access through the GUI is defined here. The parametrization algorithm called PyPa is implemented in the file 'parametrization.ts'. 
+The logic of the extension is located in the 'src' file. The database is implemented in the file 'database.ts' and utilises sqlite. The Tree View (the junction of the extension) is implemented in the file 'fragmentProvider.ts'. Most of the functionality the user can access through the GUI is defined here. The parametrization algorithm called PyPa is implemented in the file 'parametrization.ts'.
 
 ## TODOs
 
