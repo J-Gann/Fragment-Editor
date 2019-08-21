@@ -13,7 +13,7 @@ const path = require('path');
 // import * as myExtension from '../extension';
 
 // Defines a Mocha test suite to group tests of similar kind together
-/*
+
 suite("Database Tests", () => {
     const dbpath = path.join(require('os').homedir(), "fragments");
     const dbname = "testdb.db";
@@ -36,7 +36,6 @@ suite("Database Tests", () => {
         assert.equal(db.getFragments().length, 0);
     });
 });
-*/
 
 function testPyPa(script: string, selection: vscode.Selection, name: string, placeholderCompareList: string[], bodyCompareList: string[]) {
     const filePath: string = path.join(FragmentProvider.context.extensionPath, 'tmp', name);
