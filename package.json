@@ -22,6 +22,11 @@
 					"type": "string",
 					"default": "python3",
 					"description": "Define the statement how python scripts should be called"
+				},
+				"fragmentEditor.parametrization.execute": {
+					"type": "boolean",
+					"default": "false",
+					"description": "Should datatypes of placeholders be calculated for python? This would require execution of the corresponding document."
 				}
 			}
 		},

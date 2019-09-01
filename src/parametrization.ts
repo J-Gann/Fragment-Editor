@@ -408,39 +408,42 @@ export class PyPa {
             "map", "reversed", "__import__", "complex", "hasattr", "max", "round"]
 
         var promise = new Promise<{ body: string, placeholders: string } | any>((resolve, reject) => {
-
-            PyPa.testPython()
-                .then(() => PyPa.getPlaceholders(textDocument.getText(), selection, preDefinedNames))
-                .then((documentPlaceholders: Placeholder[]) => {
-                    placeholdersDocument = documentPlaceholders;
-                    var snippetPlaceholders = PyPa.placeholderIndicesToSnippet(documentPlaceholders, selection);
-                    return snippetPlaceholders;
-                })
-                .then((snippetPlaceholders: Placeholder[]) => PyPa.sortPlaceholders(snippetPlaceholders))
-                .then((sortedSnippetPlaceholders: Placeholder[]) => {
-                    placeholdersSnippet = sortedSnippetPlaceholders;
-                    return PyPa.parametrizedSnippet(textDocument, selection, sortedSnippetPlaceholders);
-                })
-                .then((parametrizedSnippet: string) => {
-                    body = parametrizedSnippet;
-                    return PyPa.createScript(textDocument, selection, placeholdersDocument);
-                })
-                .then((script: string) => PyPa.executeScript(script))
-                .then((output: string) => PyPa.parseScriptOutput(output))
-                .then((typeDefinitions: string[]) => PyPa.assignDatatypes(typeDefinitions, placeholdersSnippet))
-                .then((placeholders: Placeholder[]) => {
-                    placeholdersSnippet = placeholders;
-                    resolve(PyPa.formatResult(placeholdersSnippet, body));
-                })
-                .catch((err) => {
-                    var oc = vscode.window.createOutputChannel("Execution Error");
-                    oc.append("Execution Error\n---------------\n\n" + err);
-                    oc.appendLine("\n\nFailed to compute datatypes of placeholders. Is the python code executable? Does python code terminate eventually? Is the correct python call statement configured (python2, python3, etc.)");
-                    oc.append("Calculation of datatypes is still work in progress. Internal errors occuring during execution might be displayed");
-                    oc.show();
-                    console.log("[E] | [PyPa | parametrizeWithDatatypes]: Error while parametrizing with datatypes: " + err);
-                    reject(err);
-                })
+            if (!vscode.workspace.getConfiguration("fragmentEditor.parametrization").get("execute")) {
+                reject();
+            } else {
+                PyPa.testPython()
+                    .then(() => PyPa.getPlaceholders(textDocument.getText(), selection, preDefinedNames))
+                    .then((documentPlaceholders: Placeholder[]) => {
+                        placeholdersDocument = documentPlaceholders;
+                        var snippetPlaceholders = PyPa.placeholderIndicesToSnippet(documentPlaceholders, selection);
+                        return snippetPlaceholders;
+                    })
+                    .then((snippetPlaceholders: Placeholder[]) => PyPa.sortPlaceholders(snippetPlaceholders))
+                    .then((sortedSnippetPlaceholders: Placeholder[]) => {
+                        placeholdersSnippet = sortedSnippetPlaceholders;
+                        return PyPa.parametrizedSnippet(textDocument, selection, sortedSnippetPlaceholders);
+                    })
+                    .then((parametrizedSnippet: string) => {
+                        body = parametrizedSnippet;
+                        return PyPa.createScript(textDocument, selection, placeholdersDocument);
+                    })
+                    .then((script: string) => PyPa.executeScript(script))
+                    .then((output: string) => PyPa.parseScriptOutput(output))
+                    .then((typeDefinitions: string[]) => PyPa.assignDatatypes(typeDefinitions, placeholdersSnippet))
+                    .then((placeholders: Placeholder[]) => {
+                        placeholdersSnippet = placeholders;
+                        resolve(PyPa.formatResult(placeholdersSnippet, body));
+                    })
+                    .catch((err) => {
+                        var oc = vscode.window.createOutputChannel("Execution Error");
+                        oc.append("Execution Error\n---------------\n\n" + err);
+                        oc.appendLine("\n\nFailed to compute datatypes of placeholders. Is the python code executable? Does python code terminate eventually? Is the correct python call statement configured (python2, python3, etc.)");
+                        oc.append("Calculation of datatypes is still work in progress. Internal errors occuring during execution might be displayed");
+                        oc.show();
+                        console.log("[E] | [PyPa | parametrizeWithDatatypes]: Error while parametrizing with datatypes: " + err);
+                        reject(err);
+                    })
+            }
         });
         return promise;
     }

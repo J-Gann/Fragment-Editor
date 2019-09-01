@@ -6,7 +6,6 @@ import { Database } from './database';
 import { TreeItem } from './treeItem';
 const shell = require("shelljs");
 import * as fs from "fs";
-import { PyPa } from './parametrization';
 const rimraf = require("rimraf");
 const path = require("path");
 
@@ -53,7 +52,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// refreshes the Fragmentlist everytime a change in the database is detected (5 sec intervall)
 	fs.watchFile(Database.getDefaultPath() + '/fragments.db', (curr, prev) => {
-		Database.getInstance().loadFragments();
+		Database.getInstance().loadFragmentsFromExternal();
 		fragmentProvider.refresh();
 	});
 }
