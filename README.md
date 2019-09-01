@@ -32,7 +32,7 @@ In order to structure Fragments in folders, the tag property of Fragments can be
 
 ### Parametrizing Fragments
 
-In order to create Fragments out of an existing document select the text you want to add as a Fragment, then press the right mouse button. In the appearing menue press 'Add Fragment' and give it a name. If the document has a '.py' ending, the extension will try to determine placeholders and their datatypes. Corresponding information and warning visualisations will appear. It is important that in order to determine datatypes the extension will try to execute the document, which contains the selected code snippet.
+In order to create Fragments out of an existing document select the text you want to add as a Fragment, then press the right mouse button. In the appearing menue press 'Add Fragment' and give it a name. If the document has a '.py' ending, the extension will try to determine placeholders and their datatypes. In order to use this feature, the execution of python documents has to be allowed in the settings of the extension. Corresponding information and warning visualisations will appear. It is important that in order to determine datatypes the extension will try to execute the document, which contains the selected code snippet.
 
 ![Parametrize Fragment](https://j.gifs.com/NLpONz.gif)
 
